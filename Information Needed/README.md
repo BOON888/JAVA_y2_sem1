@@ -1,4 +1,4 @@
-JAVA testing boon hello hello
+JAVA testing
 
 1.0 COURSEWORK TITLE
 

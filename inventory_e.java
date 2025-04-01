@@ -51,6 +51,7 @@ public class inventory_e extends JPanel {
 
     public inventory_e() {
         setLayout(new BorderLayout());
+        loadItemDetailsForDropdown();  // Load item details specifically for the dropdown
 
         tabbedPane = new JTabbedPane();
         Font tabTitleFont = new Font("Arial", Font.BOLD, 20);
@@ -64,7 +65,7 @@ public class inventory_e extends JPanel {
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        loadItemDetailsForDropdown();  // Load item details specifically for the dropdown
+        
         loadInventoryData();
         populateInventoryListTableTop();
     }

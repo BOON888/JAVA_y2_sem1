@@ -16,7 +16,7 @@ public class login extends JPanel {
         JButton smButton = new JButton("SM");
         JButton pmButton = new JButton("PM");
 
-        // Adding action listeners to buttons
+        // Adding action listeners to buttons 
         amButton.addActionListener(new NavigationListener(mainFrame, new am(mainFrame)));
         fmButton.addActionListener(new NavigationListener(mainFrame, new fm(mainFrame)));
         imButton.addActionListener(new NavigationListener(mainFrame, new im(mainFrame)));

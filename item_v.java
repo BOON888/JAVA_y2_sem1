@@ -4,12 +4,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
 public class item_v extends JPanel {
 
     private static final String ITEM_FILE = "TXT/items.txt";
+    private static final int MARGIN = 20; // Define the margin size
 
     private static class Item {
         private String id, code, name, category;
@@ -31,23 +33,13 @@ public class item_v extends JPanel {
         public String getCategory() { return category; }
         public double getPrice() { return price; }
         public int getQuantity() { return quantity; }
-
-        public String getPriceFormatted() {
-            return String.format("%.2f", price); // Returns the price formatted to two decimal places
-        }
     }
 
     public item_v() {
         setLayout(new BorderLayout());
+        setBorder(new EmptyBorder(MARGIN, MARGIN, MARGIN, MARGIN)); // Apply margin to the main panel
 
         ArrayList<Item> items = loadItems();
-
-        // Title for the table
-        JLabel titleLabel = new JLabel("Item List", SwingConstants.LEFT);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.add(titleLabel, BorderLayout.WEST);
-        add(titlePanel, BorderLayout.NORTH);
 
         String[] columnNames = {"ID", "Code", "Name", "Category", "Price", "Quantity"};
         Object[][] data = new Object[items.size()][6];
@@ -57,7 +49,7 @@ public class item_v extends JPanel {
             data[i][1] = item.getCode();
             data[i][2] = item.getName();
             data[i][3] = item.getCategory();
-            data[i][4] = item.getPriceFormatted();
+            data[i][4] = item.getPrice();
             data[i][5] = item.getQuantity();
         }
 
@@ -72,7 +64,7 @@ public class item_v extends JPanel {
         table.setFillsViewportHeight(true);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        
+
         int maxColumnWidth = 200;
         for (int i = 0; i < table.getColumnCount(); i++) {
             int width = 0;
@@ -109,5 +101,13 @@ public class item_v extends JPanel {
         return items;
     }
 
+    /*
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Item List");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 600);
+        frame.add(new item_v());
+        frame.setVisible(true);
+    }
+    */
 }
-    

@@ -1,0 +1,15 @@
+1,101,Apple,Fruit,3.50,500
+2,102,Rice,Grain,25.00,300
+3,103,Banana,Fruit,2.00,400
+4,104,Wheat,Grain,20.00,350
+5,105,Carrot,Vegetable,1.50,600
+6,106,Potato,Vegetable,1.20,700
+7,107,Tomato,Vegetable,2.50,450
+8,108,Orange,Fruit,4.00,550
+9,109,Mango,Fruit,5.00,300
+10,110,Milk,Dairy,6.00,200
+11,111,Cheese,Dairy,8.00,150
+12,112,Chicken,Meat,15.00,100
+13,113,Beef,Meat,18.00,90
+14,114,Eggs,Dairy,3.00,400
+15,115,Sugar,Grocery,5.50,500

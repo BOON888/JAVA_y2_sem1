@@ -1,0 +1,15 @@
+101,Apple,Fruit,450,100,2024-03-31
+102,Rice,Grain,280,50,2024-03-31
+103,Banana,Fruit,370,100,2024-03-30
+104,Wheat,Grain,310,70,2024-03-29
+105,Carrot,Vegetable,565,120,2024-03-28
+106,Potato,Vegetable,675,150,2024-03-27
+107,Tomato,Vegetable,420,100,2024-03-26
+108,Orange,Fruit,505,80,2024-03-25
+109,Mango,Fruit,260,60,2024-03-24
+110,Milk,Dairy,180,50,2024-03-23
+111,Cheese,Dairy,135,40,2024-03-22
+112,Chicken,Meat,90,30,2024-03-21
+113,Beef,Meat,82,25,2024-03-20
+114,Eggs,Dairy,350,90,2024-03-19
+115,Sugar,Grocery,440,110,2024-03-18

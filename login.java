@@ -50,7 +50,6 @@ public class login extends JPanel {
             mainFrame.switchPanel(nextPanel); // Switch panel inside main frame
         }
     }
-
     // Main method
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

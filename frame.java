@@ -32,4 +32,4 @@ public class frame extends JFrame {
         revalidate();
         repaint();
     }
-}
+}// cibai boon

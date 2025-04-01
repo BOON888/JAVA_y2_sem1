@@ -89,11 +89,7 @@ public class inventory_e extends JPanel {
         }
 
         itemIdInfoComboBox = new JComboBox<>(comboBoxModel);
-<<<<<<< Updated upstream
         itemIdInfoComboBox.setMaximumRowCount(15);
-=======
-        itemIdInfoComboBox.setMaximumRowCount(15); // Set maximum rows to show before scroll
->>>>>>> Stashed changes
 
         JLabel lastUpdatedLabel = new JLabel("Last Updated:");
         lastUpdatedInfoField = new JTextField("DD/MM/YYYY",10);
@@ -331,26 +327,14 @@ public class inventory_e extends JPanel {
                 String[] data = line.split(",");
                 System.out.println("Data array length: " + data.length);
                 if (data.length >= 4) {
-<<<<<<< Updated upstream
                     String supplierId = data[0].trim();
                     String itemId = data[1].trim();
                     String itemName = data[2].trim();
                     String category = data[3].trim();
-=======
-                    String supplierId = data[0].trim();  // Read supplier_id (not used for dropdown)
-                    String itemId = data[1].trim();      // Read item_id
-                    String itemName = data[2].trim();    // Read item_name
-                    String category = data[3].trim();    // Read category
->>>>>>> Stashed changes
 
                     tempList.add(new ItemDetails(itemId, itemName, category));
                 } else {
-<<<<<<< Updated upstream
-                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least 4 columns.");
-
-=======
                     System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least supplier_id, item_id, item_name, category.");
->>>>>>> Stashed changes
                 }
             }
         } catch (IOException e) {

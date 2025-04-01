@@ -1,0 +1,6 @@
+user_id,username,password,role,contact_number,email
+1001,janedoe,securepass,staff,0134567890,janedoe@example.com
+1002,alice99,alicepass,user,0145678901,alice@example.com
+1003,bobsmith,bobsecure,staff,0156789012,bobsmith@example.com
+1004,charlie86,charliepwd,user,0167890123,charlie@example.com
+1005,ooiduntzi,12345,staff,1234567890,123@gmail.com

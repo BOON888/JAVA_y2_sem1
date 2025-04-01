@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -325,7 +326,7 @@ public class inventory_e extends JPanel {
 
                     itemDetailsMap.put(itemId, new ItemDetails(itemId, itemName, category));
                 } else {
-                    
+
                     System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least supplier_id, item_id, item_name, category.");
                 }
             }
@@ -363,6 +364,7 @@ public class inventory_e extends JPanel {
     }
 
     private static class InventoryRecord {
+
         private String inventoryId;
         private String itemId;
         private int stockLevel;
@@ -435,6 +437,7 @@ public class inventory_e extends JPanel {
     }
 
     private static class ItemDetails {
+
         private String itemId;
         private String itemName;
         private String category;
@@ -459,6 +462,7 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonPanel extends JPanel {
+
         private JButton viewButton;
         private JButton deleteButton;
         private InventoryRecord record;
@@ -498,6 +502,7 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonRenderer extends DefaultTableCellRenderer {
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             return (JPanel) value;
@@ -505,6 +510,7 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
+
         private JPanel panel;
 
         public ButtonEditor(JTable table) {
@@ -517,12 +523,11 @@ public class inventory_e extends JPanel {
             panel = (JPanel) value;
             return panel;
         }
-        
+
         @Override
         public Object getCellEditorValue() {
             return null;
         }
     }
 
-    
 }

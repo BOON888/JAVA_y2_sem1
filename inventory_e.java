@@ -11,6 +11,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -87,14 +89,18 @@ public class inventory_e extends JPanel {
         }
 
         itemIdInfoComboBox = new JComboBox<>(comboBoxModel);
+<<<<<<< Updated upstream
         itemIdInfoComboBox.setMaximumRowCount(15);
+=======
+        itemIdInfoComboBox.setMaximumRowCount(15); // Set maximum rows to show before scroll
+>>>>>>> Stashed changes
 
         JLabel lastUpdatedLabel = new JLabel("Last Updated:");
-        lastUpdatedInfoField = new JTextField(15);
+        lastUpdatedInfoField = new JTextField("DD/MM/YYYY",10);
         JLabel rQuantityLabel = new JLabel("Received Quantity:");
-        rQuantityInfoField = new JTextField(15);
+        rQuantityInfoField = new JTextField("Num",4);
         JLabel updateByLabel = new JLabel("Update By:");
-        updateByInfoField = new JTextField(15);
+        updateByInfoField = new JTextField(30);
         addButton = new JButton("Add");
 
         gbc.gridx = 0;
@@ -314,6 +320,7 @@ public class inventory_e extends JPanel {
 
     private void loadItemDetailsForDropdown() {
         itemDetailsMap.clear();
+        List<ItemDetails> tempList = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
             String line;
             String headerLine = br.readLine(); // Read and potentially log the header
@@ -324,21 +331,42 @@ public class inventory_e extends JPanel {
                 String[] data = line.split(",");
                 System.out.println("Data array length: " + data.length);
                 if (data.length >= 4) {
+<<<<<<< Updated upstream
                     String supplierId = data[0].trim();
                     String itemId = data[1].trim();
                     String itemName = data[2].trim();
                     String category = data[3].trim();
+=======
+                    String supplierId = data[0].trim();  // Read supplier_id (not used for dropdown)
+                    String itemId = data[1].trim();      // Read item_id
+                    String itemName = data[2].trim();    // Read item_name
+                    String category = data[3].trim();    // Read category
+>>>>>>> Stashed changes
 
-                    itemDetailsMap.put(itemId, new ItemDetails(itemId, itemName, category));
+                    tempList.add(new ItemDetails(itemId, itemName, category));
                 } else {
+<<<<<<< Updated upstream
                     System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least 4 columns.");
 
+=======
+                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least supplier_id, item_id, item_name, category.");
+>>>>>>> Stashed changes
                 }
             }
         } catch (IOException e) {
             System.err.println("IOException caught in loadItemDetailsForDropdown(): " + e.getMessage());
             e.printStackTrace(); // Print the full stack trace for detailed error info
             JOptionPane.showMessageDialog(this, "Error reading items file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            return; // Exit if there's an error reading the file
+        }
+
+        // Sort the tempList by itemId in ascending order
+        Collections.sort(tempList, Comparator.comparing(ItemDetails::getItemId));
+
+        // Populate the itemDetailsMap from the sorted list
+        itemDetailsMap.clear();
+        for (ItemDetails itemDetails : tempList) {
+            itemDetailsMap.put(itemDetails.getItemId(), itemDetails);
         }
     }
 

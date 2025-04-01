@@ -50,6 +50,7 @@ public class inventory_e extends JPanel {
     private Map<String, ItemDetails> itemDetailsMap = new HashMap<>();
 
     public inventory_e() {
+        loadItemDetailsForDropdown();
         setLayout(new BorderLayout());
 
         tabbedPane = new JTabbedPane();
@@ -64,7 +65,6 @@ public class inventory_e extends JPanel {
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        loadItemDetailsForDropdown();  // Load item details specifically for the dropdown
         loadInventoryData();
         populateInventoryListTableTop();
     }
@@ -83,11 +83,11 @@ public class inventory_e extends JPanel {
 
         for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
             ItemDetails details = entry.getValue();
-            comboBoxModel.addElement(String.format("%s (%s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
+            comboBoxModel.addElement(String.format("%s, %s, %s", details.getItemId(), details.getItemName(), details.getCategory()));
         }
 
         itemIdInfoComboBox = new JComboBox<>(comboBoxModel);
-        itemIdInfoComboBox.setMaximumRowCount(10); // Set maximum rows to show before scroll
+        itemIdInfoComboBox.setMaximumRowCount(15);
 
         JLabel lastUpdatedLabel = new JLabel("Last Updated:");
         lastUpdatedInfoField = new JTextField(15);
@@ -131,7 +131,8 @@ public class inventory_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String selectedItem = (String) itemIdInfoComboBox.getSelectedItem();
                 if (selectedItem != null) {
-                    String itemId = selectedItem.split(",")[0].trim();  // Extract Item ID
+                    String itemId = selectedItem.split(" ")[0]; // Corrected split to use space
+                    itemId = itemId.trim(); // Ensure no leading/trailing whitespace
 
                     String lastUpdated = lastUpdatedInfoField.getText();
                     int rQuantity = Integer.parseInt(rQuantityInfoField.getText().isEmpty() ? "0" : rQuantityInfoField.getText());
@@ -141,7 +142,7 @@ public class inventory_e extends JPanel {
                     inventoryRecords.add(newRecord);
                     populateInventoryListTableTop();
 
-                    itemIdInfoComboBox.setSelectedIndex(-1);  // Optionally deselect after adding
+                    itemIdInfoComboBox.setSelectedIndex(-1); // Optionally deselect after adding
                     lastUpdatedInfoField.setText("");
                     rQuantityInfoField.setText("");
                     updateByInfoField.setText("");
@@ -315,22 +316,28 @@ public class inventory_e extends JPanel {
         itemDetailsMap.clear();
         try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
             String line;
-            br.readLine(); // Skip the header line
+            String headerLine = br.readLine(); // Read and potentially log the header
+            System.out.println("Header Line (if any): " + headerLine);
+
             while ((line = br.readLine()) != null) {
+                System.out.println("Processing line: " + line);
                 String[] data = line.split(",");
+                System.out.println("Data array length: " + data.length);
                 if (data.length >= 4) {
-                    String supplierId = data[0].trim();  // Read supplier_id (not used for dropdown)
-                    String itemId = data[1].trim();      // Read item_id
-                    String itemName = data[2].trim();    // Read item_name
-                    String category = data[3].trim();  // Read category
+                    String supplierId = data[0].trim();
+                    String itemId = data[1].trim();
+                    String itemName = data[2].trim();
+                    String category = data[3].trim();
 
                     itemDetailsMap.put(itemId, new ItemDetails(itemId, itemName, category));
                 } else {
+                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least 4 columns.");
 
-                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least supplier_id, item_id, item_name, category.");
                 }
             }
         } catch (IOException e) {
+            System.err.println("IOException caught in loadItemDetailsForDropdown(): " + e.getMessage());
+            e.printStackTrace(); // Print the full stack trace for detailed error info
             JOptionPane.showMessageDialog(this, "Error reading items file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }

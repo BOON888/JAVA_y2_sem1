@@ -9,7 +9,6 @@ public class frame extends JFrame {
 
     public frame() {
         setTitle("DUNTZI SYSTEM");
-        setSize(1028, 617);
         setSize(1920, 1080); //scale 100%
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);

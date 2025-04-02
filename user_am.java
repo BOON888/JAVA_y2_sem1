@@ -1,6 +1,8 @@
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -11,6 +13,7 @@ public class user_am extends JPanel {
     private static final String USER_FILE = "TXT/users.txt";
     private JTabbedPane tabbedPane;
     private JPanel userInfoPanel;
+    private JPanel userListPanel;
 
     // User Info Components
     private JTextField usernameField;
@@ -28,6 +31,9 @@ public class user_am extends JPanel {
 
         userInfoPanel = createUserInfoPanel();
         tabbedPane.addTab("User Info", userInfoPanel);
+
+        userListPanel = new JPanel(); // Blank user list panel
+        tabbedPane.addTab("User List", userListPanel);
 
         add(tabbedPane, BorderLayout.CENTER);
     }

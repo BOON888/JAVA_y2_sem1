@@ -9,12 +9,31 @@ public class login extends JPanel {
     public login(frame mainFrame) { // Accept main frame
         setLayout(new BorderLayout());
 
+        // Title Label
+        JLabel titleLabel = new JLabel("WELCOME TO LOGIN", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 50));
+        add(titleLabel, BorderLayout.CENTER);
+
         // Creating buttons
         JButton amButton = new JButton("AM");
         JButton fmButton = new JButton("FM");
         JButton imButton = new JButton("IM");
         JButton smButton = new JButton("SM");
         JButton pmButton = new JButton("PM");
+
+        // Adjust button font size and preferred size
+        Font buttonFont = new Font("Arial", Font.BOLD, 15);
+        amButton.setFont(buttonFont);
+        fmButton.setFont(buttonFont);
+        imButton.setFont(buttonFont);
+        smButton.setFont(buttonFont);
+        pmButton.setFont(buttonFont);
+
+        amButton.setPreferredSize(new Dimension(100, 30));  // Set preferred size for buttons
+        fmButton.setPreferredSize(new Dimension(100, 30));
+        imButton.setPreferredSize(new Dimension(100, 30));
+        smButton.setPreferredSize(new Dimension(100, 30));
+        pmButton.setPreferredSize(new Dimension(100, 30));
 
         // Adding action listeners to buttons 
         amButton.addActionListener(new NavigationListener(mainFrame, new am(mainFrame)));
@@ -50,6 +69,7 @@ public class login extends JPanel {
             mainFrame.switchPanel(nextPanel); // Switch panel inside main frame
         }
     }
+
     // Main method
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

@@ -1,5 +1,8 @@
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -84,7 +87,7 @@ public class inventory_e extends JPanel {
 
         for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
             ItemDetails details = entry.getValue();
-            comboBoxModel.addElement(String.format("%s, %s, %s", details.getItemId(), details.getItemName(), details.getCategory()));
+            comboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
         }
 
         itemIdInfoComboBox = new JComboBox<>(comboBoxModel);
@@ -132,7 +135,7 @@ public class inventory_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String selectedItem = (String) itemIdInfoComboBox.getSelectedItem();
                 if (selectedItem != null) {
-                    String itemId = selectedItem.split(",")[0].trim();
+                    String itemId = selectedItem.split(" / ")[0].substring(4).trim(); // Extract Item ID
 
                     String lastUpdated = lastUpdatedInfoField.getText();
                     int rQuantity = Integer.parseInt(rQuantityInfoField.getText().isEmpty() ? "0" : rQuantityInfoField.getText());
@@ -155,11 +158,20 @@ public class inventory_e extends JPanel {
 
     private JPanel createInventoryListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setBorder(new EmptyBorder(20, 20, 0, 20));
+
+        // Bottom Panel - Update Details
+        panel.add(createInventoryListBottomPanel(), BorderLayout.SOUTH);
 
         // Top Panel - List with View and Delete
+        panel.add(createInventoryListTopPanel(), BorderLayout.NORTH);
+
+        return panel;
+    }
+
+    private JPanel createInventoryListTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
-        inventoryListTableModelTop = new DefaultTableModel(new Object[]{"Inventory ID", "Actions"}, 0) {
+        inventoryListTableModelTop = new DefaultTableModel(new Object[]{"Inventory ID - (Status)", "Actions"}, 0) { // Modified column name
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 1; // Only the Actions column should not be directly editable
@@ -174,17 +186,28 @@ public class inventory_e extends JPanel {
         inventoryListTableTop.getColumn("Actions").setCellRenderer(new ButtonRenderer());
         inventoryListTableTop.getColumn("Actions").setCellEditor(new ButtonEditor(inventoryListTableTop));
         inventoryListScrollPaneTop = new JScrollPane(inventoryListTableTop);
+        inventoryListScrollPaneTop.setMinimumSize(new Dimension(inventoryListScrollPaneTop.getMinimumSize().width, 50)); // Lower minimum height
         topPanel.add(inventoryListScrollPaneTop, BorderLayout.CENTER);
-        panel.add(topPanel, BorderLayout.NORTH);
+        return topPanel;
+    }
 
-        // Bottom Panel - Update Details
+    private JPanel createInventoryListBottomPanel() {
         JPanel bottomPanel = new JPanel(new GridBagLayout());
-        bottomPanel.setBorder(BorderFactory.createTitledBorder("Inventory List"));
+        TitledBorder titledBorder = BorderFactory.createTitledBorder("Inventory List");
+        LineBorder topBorder = new LineBorder(Color.BLACK, 2); // Black line, 2 pixels thick
+
+        // Create a compound border: titled border with top line border and top margin
+        bottomPanel.setBorder(new CompoundBorder(
+                new EmptyBorder(00, 00, 10, 0), // Top margin of 20 pixels
+                new CompoundBorder(topBorder, new EmptyBorder(5, 0, 5, 0)) // Top border with no extra padding
+        ));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
+        gbc.weighty = 0.0; // Ensure bottom panel doesn't hog vertical space
 
         JLabel inventoryIdLabel = new JLabel("Inventory ID:");
         inventoryIdUpdateField = new JTextField(15);
@@ -271,14 +294,13 @@ public class inventory_e extends JPanel {
             }
         });
 
-        panel.add(bottomPanel, BorderLayout.SOUTH);
-        return panel;
+        return bottomPanel;
     }
 
     private void populateInventoryListTableTop() {
         inventoryListTableModelTop.setRowCount(0);
         for (InventoryRecord record : inventoryRecords) {
-            inventoryListTableModelTop.addRow(new Object[]{record.getInventoryId(), new ButtonPanel(record)});
+            inventoryListTableModelTop.addRow(new Object[]{record.getInventoryId() + " - (" + record.getStatus() + ")", new ButtonPanel(record)});
         }
     }
 
@@ -286,25 +308,26 @@ public class inventory_e extends JPanel {
         inventoryRecords.clear();
         try (BufferedReader br = new BufferedReader(new FileReader(INVENTORY_FILE))) {
             String line;
-            br.readLine(); // Skip the header line
+            br.readLine(); // Skip the header line (if you have one)
             while ((line = br.readLine()) != null) {
                 String[] data = line.split(",");
-                if (data.length >= 6) { // Adjust the check if you have more columns now
+                if (data.length == 7) { // Now we expect 7 columns
                     try {
-                        String itemId = data[0].trim();
-                        int currentStock = Integer.parseInt(data[3].trim());
-                        String lastUpdated = data[5].trim();
-                        int reorderLevel = (data.length > 4) ? Integer.parseInt(data[4].trim()) : 0;
-                        String updatedBy = (data.length > 6) ? data[6].trim() : "";
-                        String status = (data.length > 7) ? data[7].trim() : "Pending";
+                        String inventoryId = data[0].trim();
+                        String itemId = data[1].trim();
+                        int currentStock = Integer.parseInt(data[2].trim()); // Stock level is at index 2
+                        String lastUpdated = data[3].trim();             // Last updated is at index 3
+                        int reorderLevel = Integer.parseInt(data[4].trim()); // Received quantity (using as reorder for now) at index 4
+                        String updatedBy = data[5].trim();                 // Updated by at index 5
+                        String status = data[6].trim();                     // Status at index 6
 
-                        InventoryRecord record = new InventoryRecord(generateNewInventoryId(), itemId, currentStock, lastUpdated, reorderLevel, updatedBy, status);
+                        InventoryRecord record = new InventoryRecord(inventoryId, itemId, currentStock, lastUpdated, reorderLevel, updatedBy, status);
                         inventoryRecords.add(record);
                     } catch (NumberFormatException e) {
                         System.err.println("Error parsing data in line (inventory.txt): " + line);
                     }
                 } else {
-                    System.err.println("Skipping invalid line in inventory.txt: " + line);
+                    System.err.println("Skipping invalid line in inventory.txt: " + line + ". Expected 7 columns.");
                 }
             }
         } catch (IOException e) {
@@ -324,15 +347,16 @@ public class inventory_e extends JPanel {
                 System.out.println("Processing line: " + line);
                 String[] data = line.split(",");
                 System.out.println("Data array length: " + data.length);
-                if (data.length >= 4) {
-                    String supplierId = data[0].trim();
-                    String itemId = data[1].trim();
-                    String itemName = data[2].trim();
+                if (data.length == 6) {
+                    String itemId = data[0].trim();
+                    String itemName = data[1].trim();
+                    String supplierId = data[2].trim();
                     String category = data[3].trim();
-
-                    tempList.add(new ItemDetails(itemId, itemName, category));
+                    double price = Double.parseDouble(data[4].trim());
+                    int stockQuantity = Integer.parseInt(data[5].trim());
+                    tempList.add(new ItemDetails(itemId, itemName, category)); // Only need these for dropdown
                 } else {
-                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected at least supplier_id, item_id, item_name, category.");
+                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected itemId, ItemName, SupplierId, Category, Price, StockQuantity.");
                 }
             }
         } catch (IOException e) {
@@ -488,9 +512,20 @@ public class inventory_e extends JPanel {
 
         public ButtonPanel(InventoryRecord record) {
             this.record = record;
-            setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            setLayout(new FlowLayout(FlowLayout.LEFT, 7, 0));
             viewButton = new JButton("View");
             deleteButton = new JButton("Delete");
+
+            // Set a smaller fixed size for the buttons
+            Dimension buttonSize = new Dimension(90, 14); // Adjust width and height as needed
+            viewButton.setPreferredSize(buttonSize);
+            deleteButton.setPreferredSize(buttonSize);
+
+            // Use a smaller font for the button text (optional, but often helps with smaller buttons)
+            Font smallerFont = new Font(viewButton.getFont().getName(), Font.PLAIN, 13); // Adjust font size as needed
+            viewButton.setFont(smallerFont);
+            deleteButton.setFont(smallerFont);
+
             add(viewButton);
             add(deleteButton);
 
@@ -547,5 +582,16 @@ public class inventory_e extends JPanel {
         public Object getCellEditorValue() {
             return null;
         }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Inventory Management");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.getContentPane().add(new inventory_e());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }

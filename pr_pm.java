@@ -36,16 +36,22 @@ public class pr_pm extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
 
         String[] detailsColumnNames = {"PR ID", "Supplier ID", "Quantity Requested", "Required Date", "Status", "Item ID", "Raised By"};
+
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column != 0;
+                // Allow only "Status" column (index 4) to be editable
+                return column == 4;
             }
         };
+
         prDetailsTable = new JTable(detailsTableModel);
         prDetailsTable.setRowHeight(30);
         JScrollPane detailsScrollPane = new JScrollPane(prDetailsTable);
         detailsScrollPane.setBorder(new EmptyBorder(10, 20, 10, 20));
+
+        JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"Approved", "Rejected"});
+        prDetailsTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(statusComboBox));
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchField = new JTextField(15);

@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -92,9 +91,9 @@ public class inventory_e extends JPanel {
         itemIdInfoComboBox.setMaximumRowCount(15);
 
         JLabel lastUpdatedLabel = new JLabel("Last Updated:");
-        lastUpdatedInfoField = new JTextField("DD/MM/YYYY",10);
+        lastUpdatedInfoField = new JTextField("DD/MM/YYYY", 10);
         JLabel rQuantityLabel = new JLabel("Received Quantity:");
-        rQuantityInfoField = new JTextField("Num",4);
+        rQuantityInfoField = new JTextField("Num", 4);
         JLabel updateByLabel = new JLabel("Update By:");
         updateByInfoField = new JTextField(30);
         addButton = new JButton("Add");
@@ -133,8 +132,7 @@ public class inventory_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String selectedItem = (String) itemIdInfoComboBox.getSelectedItem();
                 if (selectedItem != null) {
-                    String itemId = selectedItem.split(" ")[0]; // Corrected split to use space
-                    itemId = itemId.trim(); // Ensure no leading/trailing whitespace
+                    String itemId = selectedItem.split(",")[0].trim();
 
                     String lastUpdated = lastUpdatedInfoField.getText();
                     int rQuantity = Integer.parseInt(rQuantityInfoField.getText().isEmpty() ? "0" : rQuantityInfoField.getText());
@@ -356,6 +354,8 @@ public class inventory_e extends JPanel {
 
     private void saveInventoryData() {
         // Implement saving data to the file if needed
+        System.out.println("Saving inventory data...");
+        // You would typically write the 'inventoryRecords' list back to the INVENTORY_FILE here.
     }
 
     private String generateNewInventoryId() {
@@ -548,5 +548,4 @@ public class inventory_e extends JPanel {
             return null;
         }
     }
-
 }

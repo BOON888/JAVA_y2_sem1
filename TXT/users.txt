@@ -1,14 +1,10 @@
-1003,bobsmith,password,staff,01567890121000,bobsmith@example.com
-1004,charlie86,charliepwd,user,0167890123,charlie@example.com
-1005,ooiduntzi,12345,staff,1234567890,123@gmail.com
-1006,alice90,password,hi,1,alice123example.com
-1007,bobsmith,bobsecure,staff,0156789012,bobsmith@example.com
-1008,charlie86,charliepwd,user,0167890123,charlie@example.com
-1009,ooiduntzi,password,staff,100000,123@gmail.com
-1010,alice90,password,hi,1,alice123example.com
-1011,bobsmith,password,staff,0156789012,bobsmith@example.com
-1012,charlie86,charliepwd,user,0167890123,charlie@example.com
-1013,ooiduntzi,12345,staff,1234567890,123@gmail.com
-1014,alice90,password,hi,1,alice123example.com
-1015,bobsmith,bobsecure,staff,0156789012,bobsmith@example.com
-1016,charlie86,charliepwd,user,0167890123,charlie@example.com
+1001, JohnDoe, password123, am, 1234567890, johndoe@example.com
+1002, JaneSmith, password456, fm, 9876543210, janesmith@example.com
+1003, AliceBrown, passalice, im, 5556667777, alicebrown@example.com
+1004, BobWhite, bobpass, pm, 4445556666, bobwhite@example.com
+1005, CharlieBlack, charlie123, sm, 1112223333, charlieblack@example.com
+1006, EmilyDavis, emily456, am, 9998887777, emilydavis@example.com
+1007, FrankMiller, frank789, fm, 6667778888, frankmiller@example.com
+1008, GraceWilson, gracepass, im, 3334445555, gracewilson@example.com
+1009, HenryMoore, henrypass, pm, 2223334444, henrymoore@example.com
+1010, IreneTaylor, irene123, sm, 7778889999, irenetaylor@example.com

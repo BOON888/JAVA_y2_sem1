@@ -35,13 +35,13 @@ public class pr_pm extends JPanel {
         scrollPane.setBorder(new EmptyBorder(20, 20, 20, 20));
         add(scrollPane, BorderLayout.CENTER);
 
-        String[] detailsColumnNames = {"PR ID", "Supplier ID", "Quantity Requested", "Required Date", "Status", "Item ID", "Raised By"};
+        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Requested", "Required Date", "Raised By", "Status"};
 
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 // Allow only "Status" column (index 4) to be editable
-                return column == 4;
+                return column == 6;
             }
         };
 
@@ -51,7 +51,7 @@ public class pr_pm extends JPanel {
         detailsScrollPane.setBorder(new EmptyBorder(10, 20, 10, 20));
 
         JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"Approved", "Rejected"});
-        prDetailsTable.getColumnModel().getColumn(4).setCellEditor(new DefaultCellEditor(statusComboBox));
+        prDetailsTable.getColumnModel().getColumn(6).setCellEditor(new DefaultCellEditor(statusComboBox));
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchField = new JTextField(15);
@@ -122,8 +122,15 @@ public class pr_pm extends JPanel {
             while ((line = br.readLine()) != null) {
                 String[] data = line.split(",");
                 if (data.length == 7 && data[0].equals(prId)) {
-                    detailsTableModel.addRow(data);
-                    break;
+                    detailsTableModel.addRow(new Object[]{
+                        data[0], // PR ID
+                        data[1], // Item ID (was at index 4)
+                        data[2], // Supplier ID (was at index 1)
+                        data[3], // Quantity Requested (was at index 2)
+                        data[4], // Required Date (was at index 3)
+                        data[5], // Raised By (was at index 5)
+                        data[6] // Status (was at index 6)
+                    });
                 }
             }
         } catch (IOException e) {
@@ -138,12 +145,12 @@ public class pr_pm extends JPanel {
         }
 
         String prId = detailsTableModel.getValueAt(0, 0).toString();
-        String updatedSupplierId = detailsTableModel.getValueAt(0, 1).toString();
-        String updatedQuantity = detailsTableModel.getValueAt(0, 2).toString();
-        String updatedRequiredDate = detailsTableModel.getValueAt(0, 3).toString();
-        String updatedStatus = detailsTableModel.getValueAt(0, 4).toString();
-        String updatedItemId = detailsTableModel.getValueAt(0, 5).toString();
-        String updatedRaisedBy = detailsTableModel.getValueAt(0, 6).toString();
+        String updatedItemId = detailsTableModel.getValueAt(0, 1).toString();
+        String updatedSupplierId = detailsTableModel.getValueAt(0, 2).toString();
+        String updatedQuantity = detailsTableModel.getValueAt(0, 3).toString();
+        String updatedRequiredDate = detailsTableModel.getValueAt(0, 4).toString();
+        String updatedRaisedBy = detailsTableModel.getValueAt(0, 5).toString();
+        String updatedStatus = detailsTableModel.getValueAt(0, 6).toString();
 
         File inputFile = new File(PR_FILE);
         StringBuilder updatedContent = new StringBuilder();
@@ -154,12 +161,12 @@ public class pr_pm extends JPanel {
                 String[] data = line.split(",");
                 if (data[0].equals(prId)) {
                     updatedContent.append(prId).append(",")
+                            .append(updatedItemId).append(",") // Item ID comes second now
                             .append(updatedSupplierId).append(",")
                             .append(updatedQuantity).append(",")
                             .append(updatedRequiredDate).append(",")
-                            .append(updatedStatus).append(",")
-                            .append(updatedItemId).append(",")
-                            .append(updatedRaisedBy).append("\n");
+                            .append(updatedRaisedBy).append(",")
+                            .append(updatedStatus).append("\n");
                 } else {
                     updatedContent.append(line).append("\n");
                 }

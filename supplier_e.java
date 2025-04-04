@@ -14,7 +14,7 @@ public class supplier_e extends JPanel {
 
     public supplier_e() {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(1280, 450)); // Reduced panel height
+        setPreferredSize(new Dimension(1280, 450));
 
         // Title Panel
         JPanel titlePanel = new JPanel();
@@ -27,55 +27,72 @@ public class supplier_e extends JPanel {
         JPanel mainPanel = new JPanel(new GridLayout(1, 2, 10, 10));
 
         // Left Panel - Supplier Info
+        JPanel inputPanel = createInputPanel();
+        mainPanel.add(inputPanel);
+
+        // Right Panel - Supplier List
+        JPanel tablePanel = createTablePanel();
+        mainPanel.add(tablePanel);
+
+        add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createInputPanel() {
         JPanel inputPanel = new JPanel(new GridLayout(6, 2, 5, 5));
-        inputPanel.setPreferredSize(new Dimension(280, 180)); // Reduced input panel size
+        inputPanel.setPreferredSize(new Dimension(280, 180));
         inputPanel.setBorder(BorderFactory.createTitledBorder("Supplier Info"));
+
         inputPanel.add(new JLabel("Name:"));
         nameField = new JTextField(15);
         inputPanel.add(nameField);
+
         inputPanel.add(new JLabel("Contact No.:"));
         contactField = new JTextField(15);
         inputPanel.add(contactField);
+
         inputPanel.add(new JLabel("Email:"));
         emailField = new JTextField(15);
         inputPanel.add(emailField);
+
         inputPanel.add(new JLabel("Address:"));
         addressField = new JTextField(15);
         inputPanel.add(addressField);
+
         inputPanel.add(new JLabel("Item Name:"));
         itemField = new JTextField(15);
         inputPanel.add(itemField);
 
-        // Add button with reduced height
         JButton addButton = new JButton("Add");
-        addButton.setPreferredSize(new Dimension(100, 30)); // Reduced button height
+        addButton.setPreferredSize(new Dimension(100, 30));
+        addButton.addActionListener(e -> addSupplier());
         inputPanel.add(addButton);
 
-        // Right Panel - Supplier List
+        return inputPanel;
+    }
+
+    private JPanel createTablePanel() {
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setPreferredSize(new Dimension(750, 220)); // Adjusted table panel size
+        tablePanel.setPreferredSize(new Dimension(750, 220));
         tablePanel.setBorder(BorderFactory.createTitledBorder("Supplier List"));
+
         tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Item Name"}, 0);
         supplierTable = new JTable(tableModel);
         loadSuppliers();
+
         tablePanel.add(new JScrollPane(supplierTable), BorderLayout.CENTER);
 
-        // Buttons Panel
         JPanel buttonPanel = new JPanel();
         JButton deleteButton = new JButton("Delete");
+        deleteButton.addActionListener(e -> deleteSupplier());
+
         JButton editButton = new JButton("Edit");
+        editButton.addActionListener(e -> editSupplier());
+
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
         tablePanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        mainPanel.add(inputPanel);
-        mainPanel.add(tablePanel);
-        add(mainPanel, BorderLayout.CENTER);
-
-        // Action listeners
-        addButton.addActionListener(e -> addSupplier());
-        deleteButton.addActionListener(e -> deleteSupplier());
-        editButton.addActionListener(e -> editSupplier());
+        return tablePanel;
     }
 
     private void addSupplier() {
@@ -92,12 +109,7 @@ public class supplier_e extends JPanel {
 
         tableModel.addRow(new Object[]{currentId++, name, contact, email, address, item});
         saveSuppliers();
-
-        nameField.setText("");
-        contactField.setText("");
-        emailField.setText("");
-        addressField.setText("");
-        itemField.setText("");
+        clearInputFields();
     }
 
     private void deleteSupplier() {
@@ -113,30 +125,54 @@ public class supplier_e extends JPanel {
     private void editSupplier() {
         int selectedRow = supplierTable.getSelectedRow();
         if (selectedRow != -1) {
-            // Gather the selected row data
+            String id = tableModel.getValueAt(selectedRow, 0).toString();
             String name = tableModel.getValueAt(selectedRow, 1).toString();
             String contact = tableModel.getValueAt(selectedRow, 2).toString();
             String email = tableModel.getValueAt(selectedRow, 3).toString();
             String address = tableModel.getValueAt(selectedRow, 4).toString();
             String item = tableModel.getValueAt(selectedRow, 5).toString();
 
-            // Create a new edit dialog window
-            EditSupplierDialog dialog = new EditSupplierDialog(name, contact, email, address, item);
+            supplier_v dialog = new supplier_v(
+                (JFrame)SwingUtilities.getWindowAncestor(this),
+                name, contact, email, address, item
+            );
             dialog.setVisible(true);
+            if (dialog.isSaved()) {
+                String[] newData = dialog.getEditedData();
+                tableModel.setValueAt(newData[0], selectedRow, 1); // name
+                tableModel.setValueAt(newData[1], selectedRow, 2); // contact
+                tableModel.setValueAt(newData[2], selectedRow, 3); // email
+                tableModel.setValueAt(newData[3], selectedRow, 4); // address
+                tableModel.setValueAt(newData[4], selectedRow, 5); // item
+                saveSuppliers();
+            }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a supplier to edit", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    private void clearInputFields() {
+        nameField.setText("");
+        contactField.setText("");
+        emailField.setText("");
+        addressField.setText("");
+        itemField.setText("");
+    }
+
     private void saveSuppliers() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                writer.write(tableModel.getValueAt(i, 0) + "|" + tableModel.getValueAt(i, 1) + "|" +
-                        tableModel.getValueAt(i, 2) + "|" + tableModel.getValueAt(i, 3) + "|" +
-                        tableModel.getValueAt(i, 4) + "|" + tableModel.getValueAt(i, 5) + "\n");
+                writer.write(tableModel.getValueAt(i, 0) + "|" +
+                             tableModel.getValueAt(i, 1) + "|" +
+                             tableModel.getValueAt(i, 2) + "|" +
+                             tableModel.getValueAt(i, 3) + "|" +
+                             tableModel.getValueAt(i, 4) + "|" +
+                             tableModel.getValueAt(i, 5) + "\n");
             }
         } catch (IOException e) {
             e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error saving suppliers: " + e.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -156,43 +192,8 @@ public class supplier_e extends JPanel {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    // EditSupplierDialog class for editing supplier info
-    private static class EditSupplierDialog extends JDialog {
-        private JTextField nameField, contactField, emailField, addressField, itemField;
-
-        public EditSupplierDialog(String name, String contact, String email, String address, String item) {
-            setTitle("Edit Supplier");
-            setLayout(new GridLayout(6, 2, 5, 5));
-            setSize(300, 200);
-
-            nameField = new JTextField(name);
-            contactField = new JTextField(contact);
-            emailField = new JTextField(email);
-            addressField = new JTextField(address);
-            itemField = new JTextField(item);
-
-            add(new JLabel("Name:"));
-            add(nameField);
-            add(new JLabel("Contact No.:"));
-            add(contactField);
-            add(new JLabel("Email:"));
-            add(emailField);
-            add(new JLabel("Address:"));
-            add(addressField);
-            add(new JLabel("Item Name:"));
-            add(itemField);
-
-            JButton saveButton = new JButton("Save");
-            saveButton.addActionListener(e -> {
-                // Here you can update the supplier's information in the file or the table
-                dispose();  // Close the dialog after saving
-            });
-            add(saveButton);
-
-            setLocationRelativeTo(null);
+            JOptionPane.showMessageDialog(this, "Error loading suppliers: " + e.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

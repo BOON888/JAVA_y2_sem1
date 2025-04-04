@@ -1,10 +1,5 @@
-1001, JohnDoe, password123, am, 1234567890, johndoe@example.com
-1002, JaneSmith, password456, fm, 9876543210, janesmith@example.com
-1003, AliceBrown, passalice, im, 5556667777, alicebrown@example.com
-1004, BobWhite, bobpass, pm, 4445556666, bobwhite@example.com
-1005, CharlieBlack, charlie123, sm, 1112223333, charlieblack@example.com
-1006, EmilyDavis, emily456, am, 9998887777, emilydavis@example.com
-1007, FrankMiller, frank789, fm, 6667778888, frankmiller@example.com
-1008, GraceWilson, gracepass, im, 3334445555, gracewilson@example.com
-1009, HenryMoore, henrypass, pm, 2223334444, henrymoore@example.com
-1010, IreneTaylor, irene123, sm, 7778889999, irenetaylor@example.com
+1001|JohnDoe|password|fm|1234567890|johndoe@example.com
+1002|JohnDoe|password123|am|1234567890|johndoe@example.com
+1003|JohnDoe|password123|am|1234567890|johndoe@example.com
+1004|JohnDoe|password123|am|1234567890|johndoe@example.com
+1005|JohnDoe|password123|am|1234567890|johndoe@example.com

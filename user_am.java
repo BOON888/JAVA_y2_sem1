@@ -87,7 +87,7 @@ public class user_am extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|"); // Change split delimiter
                 if (data.length > 0) {
                     tableModel.addRow(new Object[]{data[0], "Buttons"});  // Add user ID and buttons for actions
                 }
@@ -99,21 +99,21 @@ public class user_am extends JPanel {
 
     // Method to search for a user by user ID
     private void searchUser() {
-        String searchId = searchField.getText().trim();  // Get the search ID
+        String searchId = searchField.getText().trim();
         if (searchId.isEmpty()) {
-            loadUserData();  // If the search field is empty, reload all user data
+            loadUserData();
             return;
         }
 
-        tableModel.setRowCount(0);  // Clear existing table data
+        tableModel.setRowCount(0);
 
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|"); // Change split delimiter
                 if (data.length > 0 && data[0].equals(searchId)) {
-                    tableModel.addRow(new Object[]{data[0], "Buttons"});  // Display the matching user
-                    break;  // Only show one user for the search
+                    tableModel.addRow(new Object[]{data[0], "Buttons"});
+                    break;
                 }
             }
         } catch (IOException e) {
@@ -123,14 +123,14 @@ public class user_am extends JPanel {
 
     // Method to view the details of a selected user
     private void viewUser(String userId) {
-        detailsTableModel.setRowCount(0);  // Clear existing details
+        detailsTableModel.setRowCount(0);
         try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|"); // Change split delimiter
                 if (data.length >= 5 && data[0].equals(userId)) {
                     detailsTableModel.addRow(new Object[]{data[0], data[1], data[3], data[4], data[5]});
-                    break;  // Stop once the user is found
+                    break;
                 }
             }
         } catch (IOException e) {
@@ -157,12 +157,12 @@ public class user_am extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|"); // Change split delimiter
                 if (data[0].equals(userId)) {
-                    updatedContent.append(userId).append(",").append(updatedUsername).append(",password,")
-                            .append(updatedRole).append(",").append(updatedContact).append(",").append(updatedEmail).append("\n");
+                    updatedContent.append(userId).append("|").append(updatedUsername).append("|password|")
+                            .append(updatedRole).append("|").append(updatedContact).append("|").append(updatedEmail).append("\n");
                 } else {
-                    updatedContent.append(line).append("\n");  // Keep other users unchanged
+                    updatedContent.append(line).append("\n");
                 }
             }
         } catch (IOException e) {
@@ -170,7 +170,6 @@ public class user_am extends JPanel {
             return;
         }
 
-        // Writing the updated data back to the file
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile, false))) {
             bw.write(updatedContent.toString().trim());
             JOptionPane.showMessageDialog(this, "User data updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -250,22 +249,19 @@ public class user_am extends JPanel {
                     File inputFile = new File(USER_FILE);
                     StringBuilder newContent = new StringBuilder();
 
-                    // Read all lines except the one to delete
                     try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
                         String line;
                         while ((line = br.readLine()) != null) {
-                            if (!line.startsWith(userId + ",")) {
+                            if (!line.startsWith(userId + "|")) { // Change split delimiter
                                 newContent.append(line).append("\n");
                             }
                         }
                     }
 
-                    // Write updated content back to file
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
                         bw.write(newContent.toString().trim());
                     }
 
-                    // Refresh UI
                     detailsTableModel.setRowCount(0);
                     loadUserData();
                     JOptionPane.showMessageDialog(user_am.this, "User deleted successfully");

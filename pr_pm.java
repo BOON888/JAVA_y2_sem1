@@ -82,7 +82,7 @@ public class pr_pm extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length > 0) {
                     tableModel.addRow(new Object[]{data[0], "View/Delete"});
                 }
@@ -104,7 +104,7 @@ public class pr_pm extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length > 0 && data[0].equals(searchId)) {
                     tableModel.addRow(new Object[]{data[0], "View/Delete"});
                     break;
@@ -120,7 +120,7 @@ public class pr_pm extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length == 7 && data[0].equals(prId)) {
                     detailsTableModel.addRow(new Object[]{
                         data[0], // PR ID
@@ -158,14 +158,14 @@ public class pr_pm extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data[0].equals(prId)) {
-                    updatedContent.append(prId).append(",")
-                            .append(updatedItemId).append(",") // Item ID comes second now
-                            .append(updatedSupplierId).append(",")
-                            .append(updatedQuantity).append(",")
-                            .append(updatedRequiredDate).append(",")
-                            .append(updatedRaisedBy).append(",")
+                    updatedContent.append(prId).append("|")
+                            .append(updatedItemId).append("|") // Item ID comes second now
+                            .append(updatedSupplierId).append("|")
+                            .append(updatedQuantity).append("|")
+                            .append(updatedRequiredDate).append("|")
+                            .append(updatedRaisedBy).append("|")
                             .append(updatedStatus).append("\n");
                 } else {
                     updatedContent.append(line).append("\n");
@@ -255,7 +255,7 @@ public class pr_pm extends JPanel {
                     try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
                         String line;
                         while ((line = br.readLine()) != null) {
-                            if (!line.startsWith(prId + ",")) {
+                            if (!line.startsWith(prId + "|")) {
                                 newContent.append(line).append("\n");
                             }
                         }

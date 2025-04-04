@@ -4,7 +4,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -24,20 +23,18 @@ public class inventory_e extends JPanel {
 
     private static final String INVENTORY_FILE = "TXT/inventory.txt";
     private static final String ITEMS_FILE = "TXT/items.txt";
-    private static final String DELIMITER = ",";
+    private static final String DELIMITER = ", "; // Changed delimiter to ", "
 
     private JTabbedPane tabbedPane;
     private JPanel inventoryInfoPanel;
     private JPanel inventoryListPanel;
 
-    // Inventory Info Components
     private JComboBox<String> itemIdInfoComboBox;
     private JTextField lastUpdatedInfoField;
     private JTextField rQuantityInfoField;
     private JTextField updateByInfoField;
     private JButton addButton;
 
-    // Inventory List Components (Top)
     private DefaultTableModel inventoryListTableModelTop = new DefaultTableModel(new Object[]{"Inventory ID - (Status)", "Actions"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -52,7 +49,6 @@ public class inventory_e extends JPanel {
     private JTable inventoryListTableTop;
     private JScrollPane inventoryListScrollPaneTop;
 
-    // Inventory List Components (Bottom - Update)
     private JTextField inventoryIdUpdateField;
     private JTextField itemIdUpdateField;
     private JTextField stockLevelUpdateField;
@@ -106,11 +102,11 @@ public class inventory_e extends JPanel {
         itemIdInfoComboBox.setMaximumRowCount(15);
 
         JLabel lastUpdatedLabel = new JLabel("Last Updated:");
-        lastUpdatedInfoField = new JTextField("DD/MM/YYYY", 10);
-        JLabel rQuantityLabel = new JLabel("Received Quantity:");
-        rQuantityInfoField = new JTextField("Num", 4);
-        JLabel updateByLabel = new JLabel("Update By:");
-        updateByInfoField = new JTextField(30);
+        lastUpdatedInfoField = new JTextField("DD-MM-YYYY", 10);
+        JLabel rQuantityLabel = new JLabel("Recieved Qty:");
+        rQuantityInfoField = new JTextField("Number", 4);
+        JLabel updateByLabel = new JLabel("Modify By:");
+        updateByInfoField = new JTextField("User ID", 30);
         addButton = new JButton("Add");
 
         gbc.gridx = 0;
@@ -147,21 +143,35 @@ public class inventory_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String selectedItem = (String) itemIdInfoComboBox.getSelectedItem();
                 if (selectedItem != null) {
-                    String itemId = selectedItem.split(" / ")[0].substring(4).trim();
-
+                    String itemId = selectedItem.split(" ")[1];
                     String lastUpdated = lastUpdatedInfoField.getText();
-                    int rQuantity = Integer.parseInt(rQuantityInfoField.getText().isEmpty() ? "0" : rQuantityInfoField.getText());
-                    String updateBy = updateByInfoField.getText();
+                    String rQuantityText = rQuantityInfoField.getText().trim();
+                    String updateByText = updateByInfoField.getText().trim();
 
-                    InventoryRecord newRecord = new InventoryRecord(generateNewInventoryId(), itemId, 0, lastUpdated, rQuantity, updateBy, "Pending");
-                    inventoryRecords.add(newRecord);
-                    populateInventoryListTableTop();
-                    saveInventoryData();
+                    try {
+                        int rQuantity = Integer.parseInt(rQuantityText.isEmpty() ? "0" : rQuantityText);
+                        int updateBy = Integer.parseInt(updateByText.isEmpty() ? "0" : updateByText);
 
-                    itemIdInfoComboBox.setSelectedIndex(-1);
-                    lastUpdatedInfoField.setText("");
-                    rQuantityInfoField.setText("");
-                    updateByInfoField.setText("");
+                        int stockQuantity = 0;
+                        if (itemDetailsMap.containsKey(itemId)) {
+                            stockQuantity = itemDetailsMap.get(itemId).getStockQuantity();
+                        }
+
+                        InventoryRecord newRecord = new InventoryRecord(generateNewInventoryId(), itemId, stockQuantity, lastUpdated, rQuantity, updateByText, "Pending");
+                        inventoryRecords.add(newRecord);
+                        populateInventoryListTableTop();
+                        saveInventoryData();
+
+                        // Reset input fields after adding
+                        lastUpdatedInfoField.setText("DD-MM-YYYY");
+                        rQuantityInfoField.setText("Number");
+                        updateByInfoField.setText("User ID");
+
+                        JOptionPane.showMessageDialog(inventory_e.this, "Inventory added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(inventory_e.this, "Invalid input. Please enter correct numeric data.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });
@@ -182,24 +192,8 @@ public class inventory_e extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(inventoryListScrollPaneTop, BorderLayout.CENTER);
 
-        JButton refreshButton = new JButton("Refresh");
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(refreshButton);
-        topPanel.add(buttonPanel, BorderLayout.SOUTH);
-
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(createInventoryListBottomPanel(), BorderLayout.SOUTH);
-
-        refreshButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                loadInventoryData();
-                populateInventoryListTableTop();
-                loadItemDetailsForDropdown();
-                updateItemIdDropdown();
-                inventoryListTableTop.repaint();
-            }
-        });
 
         return panel;
     }
@@ -231,7 +225,7 @@ public class inventory_e extends JPanel {
         stockLevelUpdateField = new JTextField(15);
         JLabel lastUpdatedLabelUpdate = new JLabel("Last Updated:");
         lastUpdatedUpdateField = new JTextField(15);
-        JLabel rQuantityLabelUpdate = new JLabel("Received Quantity:");
+        JLabel rQuantityLabelUpdate = new JLabel("Recieved Qty:");
         rQuantityUpdateField = new JTextField(15);
         JLabel updateByLabelUpdate = new JLabel("Update By:");
         updateByUpdateField = new JTextField(15);
@@ -286,21 +280,6 @@ public class inventory_e extends JPanel {
         gbc.gridy = 7;
         gbc.anchor = GridBagConstraints.EAST;
         bottomPanel.add(updateButton, gbc);
-
-        JButton goBackButton = new JButton("Go Back to Inventory Info");
-
-        gbc.gridx = 0;
-        gbc.gridy = 8;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        bottomPanel.add(goBackButton, gbc);
-
-        goBackButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tabbedPane.setSelectedIndex(0);
-            }
-        });
 
         updateButton.addActionListener(new ActionListener() {
             @Override
@@ -367,13 +346,9 @@ public class inventory_e extends JPanel {
         List<ItemDetails> tempList = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
             String line;
-            String headerLine = br.readLine();
-            System.out.println("Header Line (if any): " + headerLine);
 
             while ((line = br.readLine()) != null) {
-                System.out.println("Processing line: " + line);
                 String[] data = line.split(DELIMITER);
-                System.out.println("Data array length: " + data.length);
                 if (data.length == 6) {
                     String itemId = data[0].trim();
                     String itemName = data[1].trim();
@@ -381,7 +356,7 @@ public class inventory_e extends JPanel {
                     String category = data[3].trim();
                     double price = Double.parseDouble(data[4].trim());
                     int stockQuantity = Integer.parseInt(data[5].trim());
-                    tempList.add(new ItemDetails(itemId, itemName, category));
+                    tempList.add(new ItemDetails(itemId, itemName, category, stockQuantity));
                 } else {
                     System.err.println("Skipping invalid line in items.txt: " + line + ". Expected itemId, ItemName, SupplierId, Category, Price, StockQuantity.");
                 }
@@ -418,7 +393,16 @@ public class inventory_e extends JPanel {
     }
 
     private String generateNewInventoryId() {
-        return String.valueOf(System.currentTimeMillis());
+        long maxId = 0;
+        for (InventoryRecord record : inventoryRecords) {
+            try {
+                long currentId = Long.parseLong(record.getInventoryId());
+                maxId = Math.max(maxId, currentId);
+            } catch (NumberFormatException e) {
+                // Handle non-numeric IDs if they exist
+            }
+        }
+        return String.valueOf(maxId + 1);
     }
 
     private void populateUpdateFields(InventoryRecord record) {
@@ -529,11 +513,13 @@ public class inventory_e extends JPanel {
         private String itemId;
         private String itemName;
         private String category;
+        private int stockQuantity;
 
-        public ItemDetails(String itemId, String itemName, String category) {
+        public ItemDetails(String itemId, String itemName, String category, int stockQuantity) {
             this.itemId = itemId;
             this.itemName = itemName;
             this.category = category;
+            this.stockQuantity = stockQuantity;
         }
 
         public String getItemId() {
@@ -546,6 +532,10 @@ public class inventory_e extends JPanel {
 
         public String getCategory() {
             return category;
+        }
+
+        public int getStockQuantity() {
+            return stockQuantity;
         }
     }
 
@@ -578,10 +568,7 @@ public class inventory_e extends JPanel {
             viewButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    System.out.println("View button clicked for Inventory ID: " + record.getInventoryId());
-                    System.out.println("inventoryRecords size before populateUpdateFields: " + inventoryRecords.size());
                     populateUpdateFields(record);
-                    System.out.println("inventoryRecords size after populateUpdateFields: " + inventoryRecords.size());
                     tabbedPane.setSelectedIndex(1);
                 }
             });
@@ -601,9 +588,7 @@ public class inventory_e extends JPanel {
                             populateInventoryListTableTop();
                             inventoryListTableModelTop.fireTableRowsDeleted(rowIndex, rowIndex);
 
-                            int actionsColumnIndex = 1;
-                            Rectangle cellRect = inventoryListTableTop.getCellRect(rowIndex, actionsColumnIndex, true);
-                            inventoryListTableTop.repaint(cellRect);
+                            refreshActionColumn();
 
                             clearUpdateFields();
                             saveInventoryData();
@@ -613,17 +598,22 @@ public class inventory_e extends JPanel {
 
                             loadInventoryData();
                             populateInventoryListTableTop();
-                            inventoryListTableTop.repaint();
 
                             tabbedPane.setSelectedIndex(0);
-
-                            System.out.println("Record deleted. UI refreshed.");
                         }
                     } else {
                         JOptionPane.showMessageDialog(inventory_e.this, "Cannot delete records with status '" + record.getStatus() + "'.", "Delete Not Allowed", JOptionPane.WARNING_MESSAGE);
                     }
                 }
             });
+        }
+    }
+
+    private void refreshActionColumn() {
+        int actionsColumnIndex = 1;
+        for (int row = 0; row < inventoryListTableTop.getRowCount(); row++) {
+            Rectangle cellRect = inventoryListTableTop.getCellRect(row, actionsColumnIndex, true);
+            inventoryListTableTop.repaint(cellRect);
         }
     }
 

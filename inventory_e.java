@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -379,13 +380,13 @@ public class inventory_e extends JPanel {
     private void saveInventoryData() {
         try (FileWriter writer = new FileWriter(INVENTORY_FILE)) {
             for (InventoryRecord record : inventoryRecords) {
-                writer.write(record.getInventoryId() + DELIMITER +
-                        record.getItemId() + DELIMITER +
-                        record.getStockLevel() + DELIMITER +
-                        record.getLastUpdated() + DELIMITER +
-                        record.getReorderQuantity() + DELIMITER +
-                        record.getUpdatedBy() + DELIMITER +
-                        record.getStatus() + "\n");
+                writer.write(record.getInventoryId() + DELIMITER
+                        + record.getItemId() + DELIMITER
+                        + record.getStockLevel() + DELIMITER
+                        + record.getLastUpdated() + DELIMITER
+                        + record.getReorderQuantity() + DELIMITER
+                        + record.getUpdatedBy() + DELIMITER
+                        + record.getStatus() + "\n");
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving inventory file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -618,6 +619,7 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonRenderer extends DefaultTableCellRenderer {
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             InventoryRecord record = inventoryRecords.get(row);
@@ -630,6 +632,7 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
+
         public ButtonEditor(JTable table) {
             super(new JTextField());
             setClickCountToStart(1);

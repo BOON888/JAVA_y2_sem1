@@ -1,10 +1,1 @@
-3001, FreshFarms, 1122334455, freshfarms@example.com, 123 Green St, Fruits & Vegetables
-3002, GrainCorp, 2233445566, graincorp@example.com, 456 Wheat Rd, Rice & Grains
-3003, DairyBest, 3344556677, dairybest@example.com, 789 Cow Ln, Dairy Products
-3004, BakeWell, 4455667788, bakewell@example.com, 101 Bread Ave, Bakery Products
-3005, SweetTreats, 5566778899, sweettreats@example.com, 202 Sugar Blvd, Sugar & Sweets
-3006, MeatMonger, 6677889900, meatmonger@example.com, 303 Meat St, Meat & Poultry
-3007, OceanCatch, 7788990011, oceancatch@example.com, 404 Fish Rd, Seafood
-3008, VeggieWorld, 8899001122, veggieworld@example.com, 505 Greenhouse Ln, Organic Produce
-3009, SpiceKing, 9900112233, spiceking@example.com, 606 Spice St, Spices & Condiments
-3010, CerealMasters, 0011223344, cerealmasters@example.com, 707 Oats Rd, Breakfast Cereals
+3000|dddd|dddddd|ddd|ddd|dddd

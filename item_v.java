@@ -12,6 +12,9 @@ public class item_v extends JPanel {
 
     private static final String ITEM_FILE = "TXT/items.txt";
     private static final int MARGIN = 20; // Define the margin size
+    private static final Font GLOBAL_FONT = new Font("Arial", Font.PLAIN, 16);
+    private static final Font HEADER_FONT = new Font("Arial", Font.BOLD, 18);
+    private static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 25); // Font for the title
 
     private static class Item {
         private String id, code, name, category;
@@ -37,7 +40,14 @@ public class item_v extends JPanel {
 
     public item_v() {
         setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(MARGIN, MARGIN, MARGIN, MARGIN)); // Apply margin to the main panel
+        setBorder(new EmptyBorder(0, 0, MARGIN, 0)); // Apply margin to the main panel
+
+        // Add a title label
+        JLabel titleLabel = new JLabel("Item List",SwingConstants.LEFT);
+        titleLabel.setFont(TITLE_FONT);
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.add(titleLabel, BorderLayout.WEST);
+        add(titleLabel, BorderLayout.NORTH);
 
         ArrayList<Item> items = loadItems();
 
@@ -49,7 +59,7 @@ public class item_v extends JPanel {
             data[i][1] = item.getCode();
             data[i][2] = item.getName();
             data[i][3] = item.getCategory();
-            data[i][4] = item.getPrice();
+            data[i][4] = String.format("%.2f", item.getPrice()); // Format price to 2 decimal places
             data[i][5] = item.getQuantity();
         }
 
@@ -62,10 +72,14 @@ public class item_v extends JPanel {
 
         JTable table = new JTable(model);
         table.setFillsViewportHeight(true);
+        table.setFont(GLOBAL_FONT);
+        table.getTableHeader().setFont(HEADER_FONT);
+        table.setRowHeight(30);
 
         JScrollPane scrollPane = new JScrollPane(table);
 
-        int maxColumnWidth = 200;
+        // Adjust column widths based on content
+        int maxColumnWidth = 250; // Increased max width
         for (int i = 0; i < table.getColumnCount(); i++) {
             int width = 0;
             for (int row = 0; row < table.getRowCount(); row++) {
@@ -73,6 +87,12 @@ public class item_v extends JPanel {
                 Component comp = table.prepareRenderer(renderer, row, i);
                 width = Math.max(comp.getPreferredSize().width, width);
             }
+            TableCellRenderer headerRenderer = table.getColumnModel().getColumn(i).getHeaderRenderer();
+            if (headerRenderer == null) {
+                headerRenderer = table.getTableHeader().getDefaultRenderer();
+            }
+            Component headerComp = headerRenderer.getTableCellRendererComponent(table, table.getColumnName(i), false, false, 0, i);
+            width = Math.max(width, headerComp.getPreferredSize().width);
             width = Math.min(width + 10, maxColumnWidth);
             table.getColumnModel().getColumn(i).setPreferredWidth(width);
         }
@@ -85,14 +105,24 @@ public class item_v extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(ITEM_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] attributes = line.split(",");
-                String id = attributes[0];
-                String code = attributes[1];
-                String name = attributes[2];
-                String category = attributes[3];
-                double price = Double.parseDouble(attributes[4]);
-                int quantity = Integer.parseInt(attributes[5]);
-                items.add(new Item(id, code, name, category, price, quantity));
+                String[] attributes = line.split("\\|"); // Changed split delimiter to "|"
+                if (attributes.length == 6) {
+                    try {
+                        String id = attributes[0].trim();
+                        String code = attributes[1].trim();
+                        String name = attributes[2].trim();
+                        String category = attributes[3].trim();
+                        double price = Double.parseDouble(attributes[4].trim());
+                        int quantity = Integer.parseInt(attributes[5].trim());
+                        items.add(new Item(id, code, name, category, price, quantity));
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parsing line: " + line);
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error parsing data in items file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    System.err.println("Skipping invalid line: " + line);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

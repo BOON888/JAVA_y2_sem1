@@ -59,7 +59,7 @@ stock_level (Integer) (Stock quantity)
 last_updated (Date) (Eg: 30-12-2025)
 received_quantity (Integer)
 updated_by FK (user_id) (Updated by: Finance Manager)
-status (String) (Eg: Pending/Verified/Not verified)
+status (String) (Eg: Pending/Verified/Not verified/Deleted)
 
 finance.txt:
 finance_id PK (Integer 4 digit)

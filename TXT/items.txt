@@ -1,10 +1,10 @@
-2001, Apple, 3001, fresh produce, 1.20, 500
-2002, Rice, 3002, groceries, 10.50, 300
-2003, Milk, 3003, essential goods, 2.50, 400
-2004, Bread, 3004, essential goods, 1.80, 200
-2005, Orange, 3001, fresh produce, 1.00, 350
-2006, Sugar, 3002, groceries, 5.00, 150
-2007, Cheese, 3003, essential goods, 3.20, 120
-2008, Butter, 3004, essential goods, 2.80, 180
-2009, Tomato, 3001, fresh produce, 1.50, 450
-2010, Potato, 3002, groceries, 2.00, 500
+2001|Apple|3001|fresh produce|1.20|500
+2002|Rice|3002|groceries|10.50|300
+2003|Milk|3003|essential goods|2.50|400
+2004|Bread|3004|essential goods|1.80|200
+2005|Orange|3001|fresh produce|1.00|350
+2006|Sugar|3002|groceries|5.00|150
+2007|Cheese|3003|essential goods|3.20|120
+2008|Butter|3004|essential goods|2.80|180
+2009|Tomato|3001|fresh produce|1.50|450
+2010|Potato|3002|groceries|2.00|500

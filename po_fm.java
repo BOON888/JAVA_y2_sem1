@@ -2,9 +2,10 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,8 +24,6 @@ public class po_fm extends JPanel {
 
     private static final String PO_FILE = "TXT/po.txt";
     private static final String ITEMS_FILE = "TXT/items.txt";
-    private static final String STATUS_PENDING = "Pending";
-    private static final String STATUS_DELETED = "Deleted";
 
     private JTabbedPane tabbedPane;
     private JPanel poListPanel;
@@ -37,7 +36,7 @@ public class po_fm extends JPanel {
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            return (columnIndex == 1) ? ButtonPanel.class : super.getColumnClass(columnIndex);
+            return (columnIndex == 1) ? ButtonPanel.class : String.class;
         }
     };
     private JTable poListTableTop;
@@ -45,15 +44,17 @@ public class po_fm extends JPanel {
 
     private JTextField poIdUpdateField;
     private JTextField prIdUpdateField;
-    private JComboBox<String> itemIdUpdateComboBox;
+    private JTextField itemIdUpdateField;
     private JTextField supplierIdUpdateField;
     private JTextField quantityOrderedUpdateField;
     private JTextField orderDateUpdateField;
     private JTextField orderByUpdateField;
     private JTextField receivedByUpdateField;
     private JTextField approvedByUpdateField;
-    private JTextField statusUpdateField;
+    private JComboBox<String> statusComboBox;
     private JButton updateButton;
+    private JButton approveButton;
+    private JButton rejectButton;
 
     private List<PORecord> poRecords = new ArrayList<>();
     private Map<String, ItemDetails> itemDetailsMap = new HashMap<>();
@@ -79,12 +80,30 @@ public class po_fm extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new EmptyBorder(20, 20, 0, 20));
 
-        poListTableTop = new JTable(poListTableModelTop);
+        poListTableTop = new JTable(poListTableModelTop) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                if (column == 0) {
+                    c.setFont(c.getFont().deriveFont(Font.PLAIN));
+                    ((JComponent)c).setToolTipText(getValueAt(row, column).toString());
+                }
+                return c;
+            }
+        };
+        
+        poListTableTop.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        TableColumnModel columnModel = poListTableTop.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(300);
+        columnModel.getColumn(1).setPreferredWidth(100);
+        poListTableTop.setFillsViewportHeight(true);
+        
         poListTableTop.getColumn("Actions").setCellRenderer(new ButtonRenderer());
         poListTableTop.getColumn("Actions").setCellEditor(new ButtonEditor(poListTableTop));
+        
         poListScrollPaneTop = new JScrollPane(poListTableTop);
-        poListScrollPaneTop.setMinimumSize(new Dimension(poListScrollPaneTop.getMinimumSize().width, 50));
-
+        poListScrollPaneTop.setPreferredSize(new Dimension(poListScrollPaneTop.getPreferredSize().width, 200));
+        
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(poListScrollPaneTop, BorderLayout.CENTER);
 
@@ -96,7 +115,6 @@ public class po_fm extends JPanel {
 
     private JPanel createPOListBottomPanel() {
         JPanel bottomPanel = new JPanel(new GridBagLayout());
-        TitledBorder titledBorder = BorderFactory.createTitledBorder("PO Details");
         LineBorder topBorder = new LineBorder(Color.BLACK, 2);
 
         bottomPanel.setBorder(new CompoundBorder(
@@ -112,46 +130,41 @@ public class po_fm extends JPanel {
         gbc.weighty = 0.0;
 
         JLabel poIdLabel = new JLabel("PO ID:");
-        poIdUpdateField = new JTextField(15);
+        poIdUpdateField = new JTextField(25);
         poIdUpdateField.setEditable(false);
 
         JLabel prIdLabelUpdate = new JLabel("PR ID:");
-        prIdUpdateField = new JTextField(15);
+        prIdUpdateField = new JTextField(25);
 
         JLabel itemIdLabelUpdate = new JLabel("Item ID:");
-        DefaultComboBoxModel<String> itemIdUpdateComboBoxModel = new DefaultComboBoxModel<>();
-        for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
-            ItemDetails details = entry.getValue();
-            itemIdUpdateComboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
-        }
-        itemIdUpdateComboBox = new JComboBox<>(itemIdUpdateComboBoxModel);
-        itemIdUpdateComboBox.setMaximumRowCount(15);
+        itemIdUpdateField = new JTextField(25);
 
         JLabel supplierIdLabelUpdate = new JLabel("Supplier ID:");
-        supplierIdUpdateField = new JTextField(15);
+        supplierIdUpdateField = new JTextField(25);
 
         JLabel quantityOrderedLabelUpdate = new JLabel("Quantity Ordered:");
-        quantityOrderedUpdateField = new JTextField(15);
+        quantityOrderedUpdateField = new JTextField(25);
 
         JLabel orderDateLabelUpdate = new JLabel("Order Date:");
-        orderDateUpdateField = new JTextField(15);
+        orderDateUpdateField = new JTextField(25);
 
         JLabel orderByLabelUpdate = new JLabel("Order By (User ID):");
-        orderByUpdateField = new JTextField(15);
+        orderByUpdateField = new JTextField(25);
 
         JLabel receivedByLabelUpdate = new JLabel("Received By (User ID):");
-        receivedByUpdateField = new JTextField(15);
+        receivedByUpdateField = new JTextField(25);
 
         JLabel approvedByLabelUpdate = new JLabel("Approved By (User ID):");
-        approvedByUpdateField = new JTextField(15);
+        approvedByUpdateField = new JTextField(25);
 
         JLabel statusLabel = new JLabel("Status:");
-        statusUpdateField = new JTextField(15);
-        statusUpdateField.setEditable(false);
+        statusComboBox = new JComboBox<>(new String[]{"Pending", "Approved", "Rejected"});
+        statusComboBox.setEnabled(false);
 
         updateButton = new JButton("Update");
+        approveButton = new JButton("Approve");
+        rejectButton = new JButton("Reject");
 
-        // Add components to panel
         gbc.gridx = 0;
         gbc.gridy = 0;
         bottomPanel.add(poIdLabel, gbc);
@@ -168,7 +181,7 @@ public class po_fm extends JPanel {
         gbc.gridy = 2;
         bottomPanel.add(itemIdLabelUpdate, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(itemIdUpdateComboBox, gbc);
+        bottomPanel.add(itemIdUpdateField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -210,12 +223,17 @@ public class po_fm extends JPanel {
         gbc.gridy = 9;
         bottomPanel.add(statusLabel, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(statusUpdateField, gbc);
+        bottomPanel.add(statusComboBox, gbc);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(approveButton);
+        buttonPanel.add(rejectButton);
+        buttonPanel.add(updateButton);
 
         gbc.gridx = 1;
         gbc.gridy = 10;
         gbc.anchor = GridBagConstraints.EAST;
-        bottomPanel.add(updateButton, gbc);
+        bottomPanel.add(buttonPanel, gbc);
 
         updateButton.addActionListener(new ActionListener() {
             @Override
@@ -234,12 +252,7 @@ public class po_fm extends JPanel {
                         
                         if (confirm == JOptionPane.YES_OPTION) {
                             try {
-                                String selectedItem = (String) itemIdUpdateComboBox.getSelectedItem();
-                                if (selectedItem != null) {
-                                    String itemId = selectedItem.split(" ")[1];
-                                    record.setItemId(itemId);
-                                }
-                                
+                                record.setItemId(itemIdUpdateField.getText());
                                 record.setPrId(prIdUpdateField.getText());
                                 record.setSupplierId(supplierIdUpdateField.getText());
                                 
@@ -277,6 +290,66 @@ public class po_fm extends JPanel {
                 clearUpdateFields();
                 if (!found) {
                     JOptionPane.showMessageDialog(po_fm.this, "Could not find PO record.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        approveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String poId = poIdUpdateField.getText();
+                if (poId.isEmpty()) {
+                    JOptionPane.showMessageDialog(po_fm.this, "No PO selected. Please select a PO first.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                int confirm = JOptionPane.showConfirmDialog(
+                        po_fm.this,
+                        "Are you sure you want to APPROVE PO ID: " + poId + "?",
+                        "Confirm Approval",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    for (PORecord record : poRecords) {
+                        if (record.getPoId().equals(poId)) {
+                            record.setStatus("Approved");
+                            populatePOListTableTop();
+                            savePOData();
+                            statusComboBox.setSelectedItem("Approved");
+                            JOptionPane.showMessageDialog(po_fm.this, "PO approved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+
+        rejectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String poId = poIdUpdateField.getText();
+                if (poId.isEmpty()) {
+                    JOptionPane.showMessageDialog(po_fm.this, "No PO selected. Please select a PO first.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                int confirm = JOptionPane.showConfirmDialog(
+                        po_fm.this,
+                        "Are you sure you want to REJECT PO ID: " + poId + "?",
+                        "Confirm Rejection",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    for (PORecord record : poRecords) {
+                        if (record.getPoId().equals(poId)) {
+                            record.setStatus("Rejected");
+                            populatePOListTableTop();
+                            savePOData();
+                            statusComboBox.setSelectedItem("Rejected");
+                            JOptionPane.showMessageDialog(po_fm.this, "PO rejected successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                            break;
+                        }
+                    }
                 }
             }
         });
@@ -383,52 +456,30 @@ public class po_fm extends JPanel {
         }
     }
 
-    private String generateNewPOId() {
-        long maxId = 0;
-        for (PORecord record : poRecords) {
-            try {
-                long currentId = Long.parseLong(record.getPoId());
-                maxId = Math.max(maxId, currentId);
-            } catch (NumberFormatException e) {
-                // Handle non-numeric IDs if they exist
-            }
-        }
-        return String.valueOf(maxId + 1);
-    }
-
     private void populateUpdateFields(PORecord record) {
         poIdUpdateField.setText(record.getPoId());
         prIdUpdateField.setText(record.getPrId());
-        
-        // Set the item ID in the combo box
-        for (int i = 0; i < itemIdUpdateComboBox.getItemCount(); i++) {
-            String item = itemIdUpdateComboBox.getItemAt(i);
-            if (item.startsWith("ID: " + record.getItemId() + " ")) {
-                itemIdUpdateComboBox.setSelectedIndex(i);
-                break;
-            }
-        }
-        
+        itemIdUpdateField.setText(record.getItemId());
         supplierIdUpdateField.setText(record.getSupplierId());
         quantityOrderedUpdateField.setText(String.valueOf(record.getQuantityOrdered()));
         orderDateUpdateField.setText(record.getOrderDate());
         orderByUpdateField.setText(String.valueOf(record.getOrderBy()));
         receivedByUpdateField.setText(String.valueOf(record.getReceivedBy()));
         approvedByUpdateField.setText(String.valueOf(record.getApprovedBy()));
-        statusUpdateField.setText(record.getStatus());
+        statusComboBox.setSelectedItem(record.getStatus());
     }
 
     private void clearUpdateFields() {
         poIdUpdateField.setText("");
         prIdUpdateField.setText("");
-        itemIdUpdateComboBox.setSelectedIndex(-1);
+        itemIdUpdateField.setText("");
         supplierIdUpdateField.setText("");
         quantityOrderedUpdateField.setText("");
         orderDateUpdateField.setText("");
         orderByUpdateField.setText("");
         receivedByUpdateField.setText("");
         approvedByUpdateField.setText("");
-        statusUpdateField.setText("");
+        statusComboBox.setSelectedItem("Pending");
     }
 
     private static class PORecord {
@@ -458,7 +509,6 @@ public class po_fm extends JPanel {
             this.status = status;
         }
 
-        // Getters and setters
         public String getPoId() { return poId; }
         public String getPrId() { return prId; }
         public String getItemId() { return itemId; }
@@ -470,7 +520,6 @@ public class po_fm extends JPanel {
         public int getApprovedBy() { return approvedBy; }
         public String getStatus() { return status; }
 
-        public void setPoId(String poId) { this.poId = poId; }
         public void setPrId(String prId) { this.prId = prId; }
         public void setItemId(String itemId) { this.itemId = itemId; }
         public void setSupplierId(String supplierId) { this.supplierId = supplierId; }
@@ -496,9 +545,6 @@ public class po_fm extends JPanel {
         }
 
         public String getItemId() { return itemId; }
-        public String getItemName() { return itemName; }
-        public String getCategory() { return category; }
-        public int getStockQuantity() { return stockQuantity; }
     }
 
     private class ButtonPanel extends JPanel {
@@ -530,13 +576,12 @@ public class po_fm extends JPanel {
     private class ButtonRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            PORecord record = poRecords.get(row);
-            if (record != null) {
-                ButtonPanel panel = new ButtonPanel(record);
-                return panel;
-            } else {
-                return new JLabel();
+            if (value instanceof ButtonPanel) {
+                return (ButtonPanel) value;
             }
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            label.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+            return label;
         }
     }
 
@@ -579,7 +624,11 @@ public class po_fm extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Purchase Order Management");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.getContentPane().add(new po_fm());
+            
+            po_fm panel = new po_fm();
+            frame.getContentPane().add(new JScrollPane(panel), BorderLayout.CENTER);
+            
+            frame.setPreferredSize(new Dimension(1000, 700));
             frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);

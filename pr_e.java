@@ -35,13 +35,16 @@ public class pr_e extends JPanel {
         scrollPane.setBorder(new EmptyBorder(20, 20, 20, 20));
         add(scrollPane, BorderLayout.CENTER);
 
-        String[] detailsColumnNames = {"PR ID", "Supplier ID", "Quantity Requested", "Required Date", "Status", "Item ID", "Raised By"};
+        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Requested", "Required Date", "Raised By", "Status"};
+
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column != 0;
+                // Disable only column index 0
+                return column != 0 && column != 6;
             }
         };
+
         prDetailsTable = new JTable(detailsTableModel);
         prDetailsTable.setRowHeight(30);
         JScrollPane detailsScrollPane = new JScrollPane(prDetailsTable);
@@ -76,7 +79,7 @@ public class pr_e extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length > 0) {
                     tableModel.addRow(new Object[]{data[0], "View/Delete"});
                 }
@@ -98,7 +101,7 @@ public class pr_e extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length > 0 && data[0].equals(searchId)) {
                     tableModel.addRow(new Object[]{data[0], "View/Delete"});
                     break;
@@ -114,10 +117,17 @@ public class pr_e extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(PR_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data.length == 7 && data[0].equals(prId)) {
-                    detailsTableModel.addRow(data);
-                    break;
+                    detailsTableModel.addRow(new Object[]{
+                        data[0], // PR ID
+                        data[1], // Item ID (was at index 4)
+                        data[2], // Supplier ID (was at index 1)
+                        data[3], // Quantity Requested (was at index 2)
+                        data[4], // Required Date (was at index 3)
+                        data[5], // Raised By (was at index 5)
+                        data[6] // Status (was at index 6)
+                    });
                 }
             }
         } catch (IOException e) {
@@ -132,12 +142,12 @@ public class pr_e extends JPanel {
         }
 
         String prId = detailsTableModel.getValueAt(0, 0).toString();
-        String updatedSupplierId = detailsTableModel.getValueAt(0, 1).toString();
-        String updatedQuantity = detailsTableModel.getValueAt(0, 2).toString();
-        String updatedRequiredDate = detailsTableModel.getValueAt(0, 3).toString();
-        String updatedStatus = detailsTableModel.getValueAt(0, 4).toString();
-        String updatedItemId = detailsTableModel.getValueAt(0, 5).toString();
-        String updatedRaisedBy = detailsTableModel.getValueAt(0, 6).toString();
+        String updatedItemId = detailsTableModel.getValueAt(0, 1).toString();
+        String updatedSupplierId = detailsTableModel.getValueAt(0, 2).toString();
+        String updatedQuantity = detailsTableModel.getValueAt(0, 3).toString();
+        String updatedRequiredDate = detailsTableModel.getValueAt(0, 4).toString();
+        String updatedRaisedBy = detailsTableModel.getValueAt(0, 5).toString();
+        String updatedStatus = detailsTableModel.getValueAt(0, 6).toString();
 
         File inputFile = new File(PR_FILE);
         StringBuilder updatedContent = new StringBuilder();
@@ -145,15 +155,15 @@ public class pr_e extends JPanel {
         try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                String[] data = line.split("\\|");
                 if (data[0].equals(prId)) {
-                    updatedContent.append(prId).append(",")
-                            .append(updatedSupplierId).append(",")
-                            .append(updatedQuantity).append(",")
-                            .append(updatedRequiredDate).append(",")
-                            .append(updatedStatus).append(",")
-                            .append(updatedItemId).append(",")
-                            .append(updatedRaisedBy).append("\n");
+                    updatedContent.append(prId).append("|")
+                            .append(updatedItemId).append("|") // Item ID comes second now
+                            .append(updatedSupplierId).append("|")
+                            .append(updatedQuantity).append("|")
+                            .append(updatedRequiredDate).append("|")
+                            .append(updatedRaisedBy).append("|")
+                            .append(updatedStatus).append("\n");
                 } else {
                     updatedContent.append(line).append("\n");
                 }
@@ -242,7 +252,7 @@ public class pr_e extends JPanel {
                     try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
                         String line;
                         while ((line = br.readLine()) != null) {
-                            if (!line.startsWith(prId + ",")) {
+                            if (!line.startsWith(prId + "|")) {
                                 newContent.append(line).append("\n");
                             }
                         }

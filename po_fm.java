@@ -1,9 +1,11 @@
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class po_fm extends JFrame {
+
     public po_fm() {
         // Set up the main frame
         setTitle("Purchase Order Form");
@@ -50,8 +52,6 @@ public class po_fm extends JFrame {
         JButton inventoryBtn = new JButton("Finance");
         JButton financeRBtn = new JButton("Finance R");
         JButton exitBtn = new JButton("Exit"); // New Exit button
-
-        
 
         // Style buttons
         Font buttonFont = new Font("Arial", Font.BOLD, 12);

@@ -1,14 +1,11 @@
 
 import java.awt.*;
-import java.io.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
 
 public class user_am extends JPanel {
 
-    private static final String USER_FILE = "TXT/users.txt";
     private JTable userTable, userDetailsTable;
     private DefaultTableModel tableModel, detailsTableModel;
     private JButton updateButton;
@@ -44,7 +41,10 @@ public class user_am extends JPanel {
         goToUserListButton.addActionListener(e -> cardLayout.show(cardPanel, "UserListPage"));
 
         JButton goToUserInfoButton = new JButton("Go to Add New User");
-        goToUserInfoButton.addActionListener(e -> cardLayout.show(cardPanel, "UserInfoPage"));
+        goToUserInfoButton.addActionListener(e -> {
+            resetUserInfoForm();
+            cardLayout.show(cardPanel, "UserInfoPage");
+        });
 
         navigationPanel.add(goToUserListButton);
         navigationPanel.add(goToUserInfoButton);
@@ -52,22 +52,6 @@ public class user_am extends JPanel {
         // Add the cardPanel and navigation panel to the main layout
         add(navigationPanel, BorderLayout.NORTH);
         add(cardPanel, BorderLayout.CENTER);
-    }
-
-    public void viewUser(String userId) {
-        detailsTableModel.setRowCount(0); // Clear existing data
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length >= 6 && data[0].equals(userId)) {
-                    detailsTableModel.addRow(new Object[]{data[0], data[1], data[3], data[4], data[5]});
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error reading user file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     // ------------------- User List Panel -------------------
@@ -91,7 +75,7 @@ public class user_am extends JPanel {
         scrollPane.setBorder(new EmptyBorder(20, 20, 20, 20));
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        // Details table
+        // Details table (for view/update)
         String[] detailsColumnNames = {"User ID", "Username", "Role", "Contact Number", "Email"};
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
@@ -131,8 +115,7 @@ public class user_am extends JPanel {
 
     // ------------------- User Info Panel -------------------
     private JPanel createUserInfoPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Add New User"));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -140,7 +123,7 @@ public class user_am extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
 
         // Labels and fields
-        userIdLabel = new JLabel("User ID: " + generateNextUserId());
+        userIdLabel = new JLabel("User ID: " + UserController.generateNextUserId());
         usernameField = new JTextField(15);
         passwordField = new JTextField(15);
         contactField = new JTextField(15);
@@ -195,27 +178,33 @@ public class user_am extends JPanel {
     }
 
     // ------------------- Helper Methods -------------------
-    private String generateNextUserId() {
-        int lastId = 1000;
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length > 0) {
-                    int id = Integer.parseInt(parts[0]);
-                    if (id > lastId) {
-                        lastId = id;
-                    }
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("File read error: " + e.getMessage());
+    // Load user IDs into the user table
+    private void loadUserData() {
+        tableModel.setRowCount(0);
+        for (user_c user : UserController.loadUsers()) {
+            tableModel.addRow(new Object[]{user.getId(), "Buttons"});
         }
-        return String.valueOf(lastId + 1);
     }
 
+    // Search for a user by ID
+    private void searchUser() {
+        String searchId = searchField.getText().trim();
+        if (searchId.isEmpty()) {
+            loadUserData();
+            return;
+        }
+        tableModel.setRowCount(0);
+        for (user_c user : UserController.loadUsers()) {
+            if (user.getId().equals(searchId)) {
+                tableModel.addRow(new Object[]{user.getId(), "Buttons"});
+                break;
+            }
+        }
+    }
+
+    // Save a new user using data from the form
     private void saveNewUser() {
-        String userId = generateNextUserId();
+        String userId = UserController.generateNextUserId();
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
         String role = roleComboBox.getSelectedItem().toString();
@@ -227,63 +216,24 @@ public class user_am extends JPanel {
             return;
         }
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE, true))) {
-            String newUser = userId + "|" + username + "|" + password + "|" + role + "|" + contact + "|" + email;
-            bw.write(newUser);
-            bw.newLine();
-            JOptionPane.showMessageDialog(this, "User added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving user: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        user_c newUser = new user_c(userId, username, password, role, contact, email);
+        UserController.addUser(newUser);
+        JOptionPane.showMessageDialog(this, "User added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        resetUserInfoForm();
+        loadUserData();
+    }
 
-        // Clear form and refresh
-        userIdLabel.setText("User ID: " + generateNextUserId());
+    // Clear the input form and update the next user ID
+    private void resetUserInfoForm() {
+        userIdLabel.setText("User ID: " + UserController.generateNextUserId());
         usernameField.setText("");
         passwordField.setText("");
         contactField.setText("");
         emailField.setText("");
         roleComboBox.setSelectedIndex(0);
-        loadUserData();
     }
 
-    private void loadUserData() {
-        tableModel.setRowCount(0);
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length > 0) {
-                    tableModel.addRow(new Object[]{data[0], "Buttons"});
-                }
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error reading user file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void searchUser() {
-        String searchId = searchField.getText().trim();
-        if (searchId.isEmpty()) {
-            loadUserData();
-            return;
-        }
-
-        tableModel.setRowCount(0);
-        try (BufferedReader br = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length > 0 && data[0].equals(searchId)) {
-                    tableModel.addRow(new Object[]{data[0], "Buttons"});
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error reading user file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
+    // Update user data based on edited details in the details table
     private void updateUserData() {
         if (detailsTableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this, "No user selected to update.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -296,37 +246,29 @@ public class user_am extends JPanel {
         String updatedContact = detailsTableModel.getValueAt(0, 3).toString();
         String updatedEmail = detailsTableModel.getValueAt(0, 4).toString();
 
-        File inputFile = new File(USER_FILE);
-        StringBuilder updatedContent = new StringBuilder();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data[0].equals(userId)) {
-                    updatedContent.append(userId).append("|").append(updatedUsername).append("|password|")
-                            .append(updatedRole).append("|").append(updatedContact).append("|").append(updatedEmail).append("\n");
-                } else {
-                    updatedContent.append(line).append("\n");
-                }
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error reading user file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile, false))) {
-            bw.write(updatedContent.toString().trim());
-            JOptionPane.showMessageDialog(this, "User data updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error updating user file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-
+        // For simplicity, we keep the original password here.
+        // In a real application, you might prompt for a new password.
+        user_c updatedUser = new user_c(userId, updatedUsername, "password", updatedRole, updatedContact, updatedEmail);
+        UserController.updateUser(updatedUser);
+        JOptionPane.showMessageDialog(this, "User data updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
         loadUserData();
     }
 
-    // ------------ Renderer/Editor Classes ------------
-    class ButtonRenderer extends JPanel implements TableCellRenderer {
+    // Display user details when "View" is clicked (populating the details table)
+    public void viewUser(String userId) {
+        detailsTableModel.setRowCount(0); // Clear previous details
+        for (user_c user : UserController.loadUsers()) {
+            if (user.getId().equals(userId)) {
+                detailsTableModel.addRow(new Object[]{
+                    user.getId(), user.getUsername(), user.getRole(), user.getContact(), user.getEmail()
+                });
+                break;
+            }
+        }
+    }
+
+    // ------------ Renderer/Editor Classes for the "Buttons" in the table ------------
+    class ButtonRenderer extends JPanel implements javax.swing.table.TableCellRenderer {
 
         public ButtonRenderer() {
             setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -348,7 +290,7 @@ public class user_am extends JPanel {
         private final JButton deleteButton;
         private String userId;
 
-        public ButtonEditor(user_am aThis) {
+        public ButtonEditor(user_am parent) {
             super(new JCheckBox());
             panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             viewButton = new JButton("View");
@@ -356,12 +298,23 @@ public class user_am extends JPanel {
 
             viewButton.addActionListener(e -> {
                 fireEditingStopped();
-                viewUser(userId);
+                parent.viewUser(userId);
             });
 
             deleteButton.addActionListener(e -> {
                 fireEditingStopped();
-                deleteUser(userId);
+                int confirm = JOptionPane.showConfirmDialog(
+                        user_am.this,
+                        "Delete user " + userId + "?",
+                        "Confirm Deletion",
+                        JOptionPane.YES_NO_OPTION
+                );
+                if (confirm == JOptionPane.YES_OPTION) {
+                    UserController.deleteUser(userId);
+                    JOptionPane.showMessageDialog(user_am.this, "User deleted successfully.");
+                    detailsTableModel.setRowCount(0);
+                    loadUserData();
+                }
             });
 
             panel.add(viewButton);
@@ -378,46 +331,15 @@ public class user_am extends JPanel {
         public Object getCellEditorValue() {
             return "Buttons";
         }
+    }
 
-        private void deleteUser(String userId) {
-            int confirm = JOptionPane.showConfirmDialog(
-                    user_am.this,
-                    "Delete user " + userId + "?",
-                    "Confirm Deletion",
-                    JOptionPane.YES_NO_OPTION
-            );
-
-            if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    File inputFile = new File(USER_FILE);
-                    StringBuilder newContent = new StringBuilder();
-
-                    try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
-                        String line;
-                        while ((line = br.readLine()) != null) {
-                            if (!line.startsWith(userId + "|")) {
-                                newContent.append(line).append("\n");
-                            }
-                        }
-                    }
-
-                    try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
-                        bw.write(newContent.toString().trim());
-                    }
-
-                    detailsTableModel.setRowCount(0);
-                    loadUserData();
-                    JOptionPane.showMessageDialog(user_am.this, "User deleted successfully");
-
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(
-                            user_am.this,
-                            "Error deleting user: " + ex.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
-        }
+    // Main method to run the panel in a frame (for testing purposes)
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("User Management");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().add(new user_am());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 }

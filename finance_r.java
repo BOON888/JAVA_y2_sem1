@@ -1,3 +1,4 @@
+import java.util.List;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -95,7 +96,7 @@ public class finance_r extends JPanel {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] parts = line.split("\\|");
-                    if (parts.length >= 5) {
+                    if (parts.length >= 5 && parts[3].equals("Paid")) {
                         try {
                             Date date = inputDateFormat.parse(parts[4]);
                             monthYearData.put(date, monthYearData.getOrDefault(date, "") + "Finance: " + line + "\n");
@@ -160,10 +161,8 @@ public class finance_r extends JPanel {
             tableModel = new DefaultTableModel();
             reportTable = new JTable(tableModel);
             tableModel.addColumn("Date");
-            tableModel.addColumn("Item Purchase");
-            tableModel.addColumn("Item Sales");
-            tableModel.addColumn("Unit Purchase/Sold");
-            tableModel.addColumn("Cost Per Unit");
+            tableModel.addColumn("Item Purchase (Finance_ID)");
+            tableModel.addColumn("Item Sold (Sales_ID)");
             tableModel.addColumn("Total");
 
             TableColumn column;
@@ -174,10 +173,6 @@ public class finance_r extends JPanel {
             column = reportTable.getColumnModel().getColumn(2);
             column.setPreferredWidth(150);
             column = reportTable.getColumnModel().getColumn(3);
-            column.setPreferredWidth(180);
-            column = reportTable.getColumnModel().getColumn(4);
-            column.setPreferredWidth(150);
-            column = reportTable.getColumnModel().getColumn(5);
             column.setPreferredWidth(150);
 
             reportTable.setFont(CONTENT_FONT);
@@ -211,34 +206,31 @@ public class finance_r extends JPanel {
             gbc.fill = GridBagConstraints.HORIZONTAL;
             add(totalPanel, gbc);
 
-            processFinanceData();
+            processFinanceAndSalesData();
             totalValueLabel.setText(String.format("%.2f", overallTotal));
         }
 
-        private void processFinanceData() {
+        private void processFinanceAndSalesData() {
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
             SimpleDateFormat monthYearFormat = new SimpleDateFormat("MMMM-yyyy");
             SimpleDateFormat monthYearCompareFormat = new SimpleDateFormat("yyyyMM");
-            Map<String, Double> itemPrices = readItemPrices();
+
+            Map<String, Double> financeData = new HashMap<>();
+            Map<String, String> salesData = new HashMap<>();
 
             try (BufferedReader br = new BufferedReader(new FileReader("TXT/finance.txt"))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] parts = line.split("\\|");
-                    if (parts.length >= 7) {
-                        String itemId = parts[0];
+                    if (parts.length >= 6 && parts[3].equals("Paid")) {
+                        String financeId = parts[0];
                         String dateStr = parts[4];
-                        int quantity = Integer.parseInt(parts[6]);
+                        double amount = Double.parseDouble(parts[5]);
 
                         try {
                             Date date = dateFormat.parse(dateStr);
                             if (monthYearCompareFormat.format(date).equals(monthYearCompareFormat.format(monthYearFormat.parse(selectedMonthYear)))) {
-                                double purchaseTotal = findPurchaseTotal(itemId, quantity, itemPrices);
-                                double salesTotal = findSalesTotal(itemId, quantity, itemPrices);
-
-                                tableModel.addRow(new Object[]{dateStr, itemId, "", "", itemPrices.get(itemId), salesTotal - purchaseTotal});
-
-                                overallTotal += salesTotal - purchaseTotal;
+                                financeData.put(dateStr + "|" + financeId, amount);
                             }
                         } catch (ParseException e) {
                             System.err.println("Error parsing date: " + e.getMessage());
@@ -252,71 +244,50 @@ public class finance_r extends JPanel {
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "An unexpected error occurred.");
             }
-        }
 
-        private Map<String, Double> readItemPrices() {
-            Map<String, Double> itemPrices = new HashMap<>();
-            String itemsFilePath = "TXT/sales_data.txt";
-            if (new File(itemsFilePath).exists()) {
-                try (BufferedReader br = new BufferedReader(new FileReader(itemsFilePath))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        String[] parts = line.split("\\|");
-                        if (parts.length >= 2) {
-                            itemPrices.put(parts[0], Double.parseDouble(parts[1]));
+            try (BufferedReader br = new BufferedReader(new FileReader("TXT/sales_data.txt"))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length >= 3) {
+                        String salesId = parts[0];
+                        String dateStr = parts[2];
+                        try {
+                            Date date = dateFormat.parse(dateStr);
+                            if (monthYearCompareFormat.format(date).equals(monthYearCompareFormat.format(monthYearFormat.parse(selectedMonthYear)))) {
+                                salesData.put(dateStr + "|" + salesId, salesId);
+                            }
+                        } catch (ParseException e) {
+                            System.err.println("Error parsing date: " + e.getMessage());
                         }
                     }
-                } catch (IOException | NumberFormatException e) {
-                    JOptionPane.showMessageDialog(this, "Error reading sales_data.txt: " + e.getMessage());
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "sales_data.txt not found.");
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error reading sales_data.txt: " + e.getMessage());
             }
-            return itemPrices;
-        }
 
-        private double findPurchaseTotal(String itemId, int quantity, Map<String, Double> itemPrices) {
-            double total = 0.0;
-            String poFilePath = "TXT/po.txt";
-            if (new File(poFilePath).exists()) {
-                try (BufferedReader br = new BufferedReader(new FileReader(poFilePath))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        String[] parts = line.split("\\|");
-                        if (parts.length >= 3 && parts[0].equals(itemId)) {
-                            total = quantity * itemPrices.get(itemId);
-                            break;
-                        }
-                    }
-                } catch (IOException | NumberFormatException e) {
-                    JOptionPane.showMessageDialog(this, "Error reading po.txt: " + e.getMessage());
+            Set<String> allDates = new HashSet<>();
+            allDates.addAll(financeData.keySet());
+            allDates.addAll(salesData.keySet());
+            List<String> sortedDates = new ArrayList<>(allDates);
+            sortedDates.sort(Comparator.comparing(s -> {
+                try {
+                    return dateFormat.parse(s.split("\\|")[0]);
+                } catch (ParseException e) {
+                    return new Date(0);
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "po.txt not found.");
-            }
-            return total;
-        }
+            }));
 
-        private double findSalesTotal(String itemId, int quantity, Map<String, Double> itemPrices) {
-            double total = 0.0;
-            String salesFilePath = "TXT/sales_data.txt";
-            if (new File(salesFilePath).exists()) {
-                try (BufferedReader br = new BufferedReader(new FileReader(salesFilePath))) {
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        String[] parts = line.split("\\|");
-                        if (parts.length >= 3 && parts[0].equals(itemId)) {
-                            total = quantity * itemPrices.get(itemId);
-                            break;
-                        }
-                    }
-                } catch (IOException | NumberFormatException e) {
-                    JOptionPane.showMessageDialog(this, "Error reading sales_data.txt: " + e.getMessage());
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "sales_data.txt not found.");
+            for (String dateKey : sortedDates) {
+                String[] parts = dateKey.split("\\|");
+                String dateStr = parts[0];
+                String financeId = financeData.containsKey(dateKey) ? parts[1] : "";
+                String salesId = salesData.containsKey(dateKey) ? parts[1] : "";
+                double amount = financeData.getOrDefault(dateKey, 0.0);
+
+                tableModel.addRow(new Object[]{dateStr, financeId, salesId, amount});
+                overallTotal += amount;
             }
-            return total;
         }
     }
 }

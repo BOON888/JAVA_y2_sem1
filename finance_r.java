@@ -217,6 +217,7 @@ public class finance_r extends JPanel {
 
             Map<String, Double> financeData = new HashMap<>();
             Map<String, String> salesData = new HashMap<>();
+            Map<String, Double> itemPrices = readItemPrices();
 
             try (BufferedReader br = new BufferedReader(new FileReader("TXT/finance.txt"))) {
                 String line;
@@ -278,6 +279,9 @@ public class finance_r extends JPanel {
                 }
             }));
 
+            double totalSales = 0.0;
+            double totalFinance = 0.0;
+
             for (String dateKey : sortedDates) {
                 String[] parts = dateKey.split("\\|");
                 String dateStr = parts[0];
@@ -285,9 +289,52 @@ public class finance_r extends JPanel {
                 String salesId = salesData.containsKey(dateKey) ? parts[1] : "";
                 double amount = financeData.getOrDefault(dateKey, 0.0);
 
-                tableModel.addRow(new Object[]{dateStr, financeId, salesId, amount});
-                overallTotal += amount;
+                if (salesId != "") {
+                    try (BufferedReader br = new BufferedReader(new FileReader("TXT/sales_data.txt"))) {
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            String[] saleParts = line.split("\\|");
+                            if (saleParts[0].equals(salesId) && saleParts.length >= 4 && saleParts[2].equals(dateStr)) {
+                                String itemId = saleParts[1];
+                                int quantitySold = Integer.parseInt(saleParts[3]);
+                                amount = itemPrices.get(itemId) * quantitySold;
+                                break;
+                            }
+                        }
+                    } catch (IOException | NumberFormatException e) {
+                        JOptionPane.showMessageDialog(this, "Error processing sales data: " + e.getMessage());
+                    }
+                    totalSales+=amount;
+                }else if(financeId != ""){
+                    totalFinance+=amount;
+                }
+
+                String formattedAmount;
+                if(financeId != ""){
+                    formattedAmount = String.format("(%.2f)", amount);
+                }else{
+                    formattedAmount = String.format("%.2f", amount);
+                }
+
+                tableModel.addRow(new Object[]{dateStr, financeId, salesId, formattedAmount});
             }
+            overallTotal = totalSales - totalFinance;
+        }
+
+        private Map<String, Double> readItemPrices() {
+            Map<String, Double> itemPrices = new HashMap<>();
+            try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length >= 5) {
+                        itemPrices.put(parts[0], Double.parseDouble(parts[4]));
+                    }
+                }
+            } catch (IOException | NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Error reading items.txt: " + e.getMessage());
+            }
+            return itemPrices;
         }
     }
 }

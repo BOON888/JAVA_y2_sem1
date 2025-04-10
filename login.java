@@ -34,18 +34,35 @@ public class login extends JPanel {
         button.setPreferredSize(new Dimension(100, 30));
 
         button.addActionListener(e -> {
-            String password = JOptionPane.showInputDialog(null, "Enter password for " + role + ":");
+            // Create input fields for username and password
+            JTextField usernameField = new JTextField();
+            JPasswordField passwordField = new JPasswordField();
+            JPanel panel = new JPanel(new GridLayout(2, 2));
+            panel.add(new JLabel("Username:"));
+            panel.add(usernameField);
+            panel.add(new JLabel("Password:"));
+            panel.add(passwordField);
 
-            if (password != null) {
-                login_c loginCheck = new login_c(role, password);
+            int result = JOptionPane.showConfirmDialog(null, panel, "Enter Credentials for " + role,
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-                if (loginCheck.authenticate()) {
-                    JPanel rolePanel = getRolePanel(role, mainFrame);
-                    if (rolePanel != null) {
-                        mainFrame.switchPanel(rolePanel);
+            if (result == JOptionPane.OK_OPTION) {
+                String username = usernameField.getText().trim();
+                String password = new String(passwordField.getPassword());
+
+                if (!username.isEmpty() && !password.isEmpty()) {
+                    login_c loginCheck = new login_c(role, username, password);
+
+                    if (loginCheck.authenticate()) {
+                        JPanel rolePanel = getRolePanel(role, mainFrame);
+                        if (rolePanel != null) {
+                            mainFrame.switchPanel(rolePanel);
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Invalid credentials. Try again.", "Login Failed", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, "Invalid password or role. Try again.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Please enter both username and password.", "Missing Info", JOptionPane.WARNING_MESSAGE);
                 }
             }
         });

@@ -7,6 +7,7 @@ import java.io.IOException;
 public class login_c {
 
     private String selectedRole;
+    private String enteredUsername;
     private String enteredPassword;
 
     // Store user info after login
@@ -14,8 +15,10 @@ public class login_c {
     public static String currentUsername;
     public static String currentRole;
 
-    public login_c(String selectedRole, String enteredPassword) {
+    // Updated constructor to accept username
+    public login_c(String selectedRole, String enteredUsername, String enteredPassword) {
         this.selectedRole = selectedRole;
+        this.enteredUsername = enteredUsername;
         this.enteredPassword = enteredPassword;
     }
 
@@ -34,7 +37,11 @@ public class login_c {
                     String password = parts[2];
                     String role = parts[3];
 
-                    if (role.equalsIgnoreCase(selectedRole) && password.equals(enteredPassword)) {
+                    // Check username, password, and role
+                    if (username.equalsIgnoreCase(enteredUsername)
+                            && password.equals(enteredPassword)
+                            && role.equalsIgnoreCase(selectedRole)) {
+
                         // Save logged-in user info
                         currentUserId = userId;
                         currentUsername = username;

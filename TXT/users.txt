@@ -4,3 +4,4 @@
 1004|DUN TZI|password|im|0165298626|duntzi@gmail.com
 1005|DUN TZI|password|sm|0165298626|duntzi@gmail.com
 1006|DUN TZI|password1|im|0165298626|duntzi@gmail.com
+1007|duntzi|password|am|1234567890|123@gmail.com

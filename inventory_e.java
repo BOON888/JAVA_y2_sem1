@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -638,4 +639,3 @@ public class inventory_e extends JPanel {
         });
     }
 }
-

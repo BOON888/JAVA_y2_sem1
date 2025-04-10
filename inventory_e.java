@@ -233,6 +233,7 @@ public class inventory_e extends JPanel {
                                 record.setUpdatedBy(updateBy);
                                 populateInventoryListTableTop();
                                 saveInventoryData();
+                                updateItemIdDropdown();
                                 JOptionPane.showMessageDialog(inventory_e.this, "Inventory updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                             } catch (NumberFormatException ex) {
                                 JOptionPane.showMessageDialog(inventory_e.this, "Invalid input for Received Quantity or Update By (User ID). Please enter correct numeric data.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -326,7 +327,7 @@ public class inventory_e extends JPanel {
         }
     }
 
-    private void saveInventoryData() {
+    public void saveInventoryData() {
         try (FileWriter writer = new FileWriter(INVENTORY_FILE)) {
             for (InventoryRecord record : inventoryRecords) {
                 writer.write(record.getInventoryId() + "|"
@@ -342,7 +343,7 @@ public class inventory_e extends JPanel {
         }
     }
 
-    private String generateNewInventoryId() {
+    public String generateNewInventoryId() {
         long maxId = 0;
         for (InventoryRecord record : inventoryRecords) {
             try {
@@ -551,6 +552,7 @@ public class inventory_e extends JPanel {
                             saveInventoryData();
                             refreshActionColumn();
                             clearUpdateFields();
+                            updateItemIdDropdown();
                             tabbedPane.setSelectedIndex(0);
                             JOptionPane.showMessageDialog(inventory_e.this, "Inventory ID: " + record.getInventoryId() + " deleted successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                         } else {

@@ -11,18 +11,22 @@ public class fm extends JPanel {
         this.mainFrame = frame;
         setLayout(new BorderLayout());
 
-        // Title Label
-        JLabel titleLabel = new JLabel("WELCOME FINANCE MANAGER", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        // ===== TOP PANEL (Always Visible Username) =====
+        String username = login_c.currentUsername; // This should be the logged-in user's username
+        String userId = login_c.currentUserId;
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel userLabel = new JLabel("Username: " + username + "   " + "User Id: " + userId);
+        userLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        topPanel.add(userLabel);
 
-        // Container for dynamic content
+        // ===== CONTENT PANEL (Switches Content in Center) =====
         contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(titleLabel, BorderLayout.CENTER);
+        JLabel defaultLabel = new JLabel("WELCOME FINANCE MANAGER", SwingConstants.CENTER);
+        defaultLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        contentPanel.add(defaultLabel, BorderLayout.CENTER);
 
-        // Panel for bottom buttons
-        JPanel bottomPanel = new JPanel(new GridLayout(1, 6)); // 5 buttons + 1 Exit button
-
-        // Creating buttons
+        // ===== BOTTOM BUTTON PANEL =====
+        JPanel bottomPanel = new JPanel(new GridLayout(1, 7)); // 6 buttons + 1 Exit button
         String[] buttonNames = {"PO", "Inventory", "PR List", "Finance", "Finance R"};
         String[] classNames = {"po_fm", "inventory_fm", "pr_v", "finance_e", "finance_r"};
 
@@ -33,11 +37,12 @@ public class fm extends JPanel {
             bottomPanel.add(button);
         }
 
-        // Exit button
         JButton exitButton = new JButton("Exit");
         exitButton.addActionListener(e -> exitToLogin());
         bottomPanel.add(exitButton);
 
+        // ===== ADD TO MAIN PANEL =====
+        add(topPanel, BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
     }

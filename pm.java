@@ -14,8 +14,9 @@ public class pm extends JPanel {
         // ===== TOP PANEL (Always Visible Username) =====
         String username = login_c.currentUsername; // This should be the logged-in user's username
         String userId = login_c.currentUserId;
+        String role = login_c.currentRole;
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel userLabel = new JLabel("Username: " + username + "   " + "User Id: " + userId);
+        JLabel userLabel = new JLabel("Role:" + role + "   " + "Username: " + username + "   " + "User Id: " + userId);
         userLabel.setFont(new Font("Arial", Font.BOLD, 20));
         topPanel.add(userLabel);
 

@@ -1,50 +1,24 @@
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.*;
 
 public class login extends JPanel {
 
-    public login(frame mainFrame) { // Accept main frame
+    public login(frame mainFrame) {
         setLayout(new BorderLayout());
 
-        // Title Label
         JLabel titleLabel = new JLabel("WELCOME TO LOGIN", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 50));
         add(titleLabel, BorderLayout.CENTER);
 
-        // Creating buttons
-        JButton amButton = new JButton("AM");
-        JButton fmButton = new JButton("FM");
-        JButton imButton = new JButton("IM");
-        JButton smButton = new JButton("SM");
-        JButton pmButton = new JButton("PM");
+        // Button declarations
+        JButton amButton = createRoleButton("AM", mainFrame);
+        JButton fmButton = createRoleButton("FM", mainFrame);
+        JButton imButton = createRoleButton("IM", mainFrame);
+        JButton smButton = createRoleButton("SM", mainFrame);
+        JButton pmButton = createRoleButton("PM", mainFrame);
 
-        // Adjust button font size and preferred size
-        Font buttonFont = new Font("Arial", Font.BOLD, 15);
-        amButton.setFont(buttonFont);
-        fmButton.setFont(buttonFont);
-        imButton.setFont(buttonFont);
-        smButton.setFont(buttonFont);
-        pmButton.setFont(buttonFont);
-
-        amButton.setPreferredSize(new Dimension(100, 30));  // Set preferred size for buttons
-        fmButton.setPreferredSize(new Dimension(100, 30));
-        imButton.setPreferredSize(new Dimension(100, 30));
-        smButton.setPreferredSize(new Dimension(100, 30));
-        pmButton.setPreferredSize(new Dimension(100, 30));
-
-        // Adding action listeners to buttons 
-        amButton.addActionListener(new NavigationListener(mainFrame, new am(mainFrame)));
-        fmButton.addActionListener(new NavigationListener(mainFrame, new fm(mainFrame)));
-        imButton.addActionListener(new NavigationListener(mainFrame, new im(mainFrame)));
-        smButton.addActionListener(new NavigationListener(mainFrame, new sm(mainFrame)));
-        pmButton.addActionListener(new NavigationListener(mainFrame, new pm(mainFrame)));
-
-        // Panel for buttons at the bottom
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout());
+        JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(amButton);
         buttonPanel.add(fmButton);
         buttonPanel.add(imButton);
@@ -54,27 +28,52 @@ public class login extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private static class NavigationListener implements ActionListener {
+    private JButton createRoleButton(String role, frame mainFrame) {
+        JButton button = new JButton(role);
+        button.setFont(new Font("Arial", Font.BOLD, 15));
+        button.setPreferredSize(new Dimension(100, 30));
 
-        private final frame mainFrame;
-        private final JPanel nextPanel;
+        button.addActionListener(e -> {
+            String password = JOptionPane.showInputDialog(null, "Enter password for " + role + ":");
 
-        public NavigationListener(frame mainFrame, JPanel nextPanel) {
-            this.mainFrame = mainFrame;
-            this.nextPanel = nextPanel;
-        }
+            if (password != null) {
+                login_c loginCheck = new login_c(role, password);
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            mainFrame.switchPanel(nextPanel); // Switch panel inside main frame
+                if (loginCheck.authenticate()) {
+                    JPanel rolePanel = getRolePanel(role, mainFrame);
+                    if (rolePanel != null) {
+                        mainFrame.switchPanel(rolePanel);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid password or role. Try again.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        return button;
+    }
+
+    private JPanel getRolePanel(String role, frame mainFrame) {
+        switch (role) {
+            case "AM":
+                return new am(mainFrame);
+            case "FM":
+                return new fm(mainFrame);
+            case "IM":
+                return new im(mainFrame);
+            case "SM":
+                return new sm(mainFrame);
+            case "PM":
+                return new pm(mainFrame);
+            default:
+                return null;
         }
     }
 
-    // Main method
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             frame mainFrame = new frame();
-            mainFrame.switchPanel(new login(mainFrame)); // Set login as default panel
+            mainFrame.switchPanel(new login(mainFrame));
         });
     }
 }

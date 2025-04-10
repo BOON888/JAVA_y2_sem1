@@ -1,2 +1,5 @@
 1001|DUN TZI|password|am|0165298626|duntzi@gmail.com
-1002|Boon|123|fm|123|123
+1002|DUN TZI|password|fm|0165298626|duntzi@gmail.com
+1002|DUN TZI|password|pm|0165298626|duntzi@gmail.com
+1002|DUN TZI|password|im|0165298626|duntzi@gmail.com
+1002|DUN TZI|password|sm|0165298626|duntzi@gmail.com

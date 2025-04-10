@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -152,6 +151,7 @@ public class inventory_e extends JPanel {
         rQuantityUpdateField = new JTextField(15);
         JLabel updateByLabelUpdate = new JLabel("Update By (User ID):");
         updateByUpdateField = new JTextField(15);
+        updateByUpdateField.setEditable(false);
         JLabel statusLabel = new JLabel("Status:");
         statusUpdateField = new JTextField(15);
         statusUpdateField.setEditable(false);
@@ -204,6 +204,18 @@ public class inventory_e extends JPanel {
         gbc.anchor = GridBagConstraints.EAST;
         bottomPanel.add(updateButton, gbc);
 
+        itemIdUpdateComboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String selectedItem = (String) itemIdUpdateComboBox.getSelectedItem();
+                if (selectedItem != null) {
+                    String itemId = selectedItem.split(" ")[1];
+                    int stockLevel = getStockLevelFromItems(itemId);
+                    stockLevelUpdateField.setText(String.valueOf(stockLevel));
+                }
+            }
+        });
+
         updateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -225,18 +237,20 @@ public class inventory_e extends JPanel {
                             }
                             record.setLastUpdated(lastUpdatedUpdateField.getText());
                             String rQuantityText = rQuantityUpdateField.getText().trim();
-                            String updateByText = updateByUpdateField.getText().trim();
                             try {
                                 int rQuantity = Integer.parseInt(rQuantityText.isEmpty() ? "0" : rQuantityText);
-                                int updateBy = Integer.parseInt(updateByText.isEmpty() ? "0" : updateByText);
                                 record.setReorderQuantity(rQuantity);
-                                record.setUpdatedBy(updateBy);
+                                record.setStockLevel(Integer.parseInt(stockLevelUpdateField.getText().isEmpty() ? "0" : stockLevelUpdateField.getText()));
+
+                                record.setUpdatedBy(0);
+                                record.setUpdatedBy(Integer.parseInt(login_c.currentUserId));
+                                JOptionPane.showMessageDialog(inventory_e.this, "Inventory updated successfully! Updated By: " + login_c.currentUserId, "Success", JOptionPane.INFORMATION_MESSAGE);
+                                clearUpdateFields();
                                 populateInventoryListTableTop();
                                 saveInventoryData();
                                 updateItemIdDropdown();
-                                JOptionPane.showMessageDialog(inventory_e.this, "Inventory updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                             } catch (NumberFormatException ex) {
-                                JOptionPane.showMessageDialog(inventory_e.this, "Invalid input for Received Quantity or Update By (User ID). Please enter correct numeric data.", "Error", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(inventory_e.this, "Invalid input for Received Quantity or Stock Level. Please enter correct numeric data.", "Error", JOptionPane.ERROR_MESSAGE);
                                 return;
                             }
                         } else {
@@ -308,6 +322,9 @@ public class inventory_e extends JPanel {
                     double price = Double.parseDouble(data[4].trim());
                     int stockQuantity = Integer.parseInt(data[5].trim());
                     tempList.add(new ItemDetails(itemId, itemName, category, stockQuantity));
+                    if (itemId.equals("2005")) {
+                        System.out.println("Item ID 2005 Stock Quantity: " + stockQuantity);
+                    }
                 } else {
                     System.err.println("Skipping invalid line in items.txt: " + line + ". Expected itemId, ItemName, SupplierId, Category, Price, StockQuantity.");
                 }
@@ -400,7 +417,6 @@ public class inventory_e extends JPanel {
     }
 
     public static class InventoryRecord {
-
         private String inventoryId;
         private String itemId;
         private int stockLevel;
@@ -473,7 +489,6 @@ public class inventory_e extends JPanel {
     }
 
     public static class ItemDetails {
-
         private String itemId;
         private String itemName;
         private String category;
@@ -504,7 +519,6 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonPanel extends JPanel {
-
         private JButton viewButton;
         private JButton deleteButton;
         private InventoryRecord record;
@@ -579,7 +593,6 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonRenderer extends DefaultTableCellRenderer {
-
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             InventoryRecord record = inventoryRecords.get(row);
@@ -594,7 +607,6 @@ public class inventory_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
-
         private ButtonPanel panel;
 
         public ButtonEditor(JTable table) {
@@ -628,6 +640,22 @@ public class inventory_e extends JPanel {
         public boolean shouldSelectCell(java.util.EventObject anEvent) {
             return false;
         }
+    }
+
+    private int getStockLevelFromItems(String itemId) {
+        try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length == 6 && data[0].trim().equals(itemId)) {
+                    return Integer.parseInt(data[5].trim());
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.err.println("Error reading items file or parsing stock level: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public static void main(String[] args) {

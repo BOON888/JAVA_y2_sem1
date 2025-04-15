@@ -12,19 +12,17 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import javax.swing.AbstractCellEditor;
+
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import javax.swing.RowFilter;
 
 public class po_e extends JPanel {
     private static final String PO_FILE = "TXT/po.txt";
     private JTabbedPane tabbedPane;
+    private po_e_c poController = new po_e_c(); // 创建 po_e_c 的实例
 
     // --- PO Info Components (Original) ---
     private JTextField prIDField, itemIDField, supplierIDField, quantityField, orderDateField;
@@ -39,31 +37,25 @@ public class po_e extends JPanel {
     private JButton searchButton;
     private TableRowSorter<DefaultTableModel> sorter;
     private JPanel detailsPanel; // Panel to show details below table
-    // Labels & Fields for the details panel
     private JLabel detailPoIdLabel, detailPrIdLabel, detailItemIdLabel, detailSupplierIdLabel,
-                   detailQuantityLabel, detailOrderDateLabel, detailOrderByLabel,
-                   detailReceivedByLabel, detailApprovedByLabel, detailStatusLabel;
-    // Store full data read from file, corresponding to table model rows
+                        detailQuantityLabel, detailOrderDateLabel, detailOrderByLabel,
+                        detailReceivedByLabel, detailApprovedByLabel, detailStatusLabel;
     private List<String[]> fullPoData;
     // --------------------------------------
 
     public po_e() {
         setLayout(new BorderLayout());
-        fullPoData = new ArrayList<>(); // Initialize the list to hold full data
+        fullPoData = new ArrayList<>();
 
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("PO Info", createPOInfoPanel()); // Original
-        tabbedPane.addTab("PO List", createPOListPanel()); // Modified
+        tabbedPane.addTab("PO Info", createPOInfoPanel());
+        tabbedPane.addTab("PO List", createPOListPanel());
 
         tabbedPane.setFont(new Font("Arial", Font.BOLD, 20));
         add(tabbedPane, BorderLayout.CENTER);
     }
 
-    // =================================================
-    // --- ORIGINAL createPOInfoPanel Method ---
-    // =================================================
     private JPanel createPOInfoPanel() {
-        // *** This method remains exactly as in your original code ***
         JPanel panel = new JPanel(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -131,7 +123,26 @@ public class po_e extends JPanel {
         gbc.weightx = 0;
         addButton = new JButton("Add Purchase Order");
         addButton.setFont(new Font("Arial", Font.BOLD, 16));
-        addButton.addActionListener(e -> addPurchaseOrder());
+        addButton.addActionListener(e -> {
+            String prID = prIDField.getText().trim();
+            String itemID = itemIDField.getText().trim();
+            String supplierID = supplierIDField.getText().trim();
+            String quantityStr = quantityField.getText().trim();
+            String orderDate = orderDateField.getText().trim();
+            String orderBy = mapRoleToID((String) orderByDropdown.getSelectedItem());
+            String receivedBy = mapRoleToID((String) receivedByDropdown.getSelectedItem());
+            String approvedBy = mapRoleToID((String) approvedByDropdown.getSelectedItem());
+
+            if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, orderBy, receivedBy, approvedBy)) {
+                loadPurchaseOrders(); // 重新加载数据
+                tabbedPane.setSelectedIndex(1); // 切换到 PO List 选项卡
+                // 清空输入字段
+                prIDField.setText(""); itemIDField.setText(""); supplierIDField.setText("");
+                quantityField.setText(""); orderDateField.setText("");
+                orderByDropdown.setSelectedIndex(0); receivedByDropdown.setSelectedIndex(0); approvedByDropdown.setSelectedIndex(0);
+            }
+        });
+
         panel.add(addButton, gbc);
 
         gbc.gridy++;
@@ -140,14 +151,7 @@ public class po_e extends JPanel {
 
         return panel;
     }
-    // =================================================
-    // --- END ORIGINAL createPOInfoPanel Method ---
-    // =================================================
 
-
-    // =================================================
-    // --- NEW createPOListPanel Method ---
-    // =================================================
     private JPanel createPOListPanel() {
         JPanel listPanel = new JPanel(new BorderLayout(10, 10));
         listPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -250,9 +254,6 @@ public class po_e extends JPanel {
 
         return listPanel;
     }
-    // =================================================
-    // --- END NEW createPOListPanel Method ---
-    // =================================================
 
     // Helper to create styled labels for the details panel
     private JLabel createDetailLabel() {
@@ -284,106 +285,27 @@ public class po_e extends JPanel {
     // Load data: Reads full data, stores it, populates only PO ID in table
     private void loadPurchaseOrders() {
         tableModel.setRowCount(0); // Clear table
-        fullPoData.clear();        // Clear stored full data
-        File file = new File(PO_FILE);
-        if (!file.exists()) {
-            System.err.println("PO file not found: " + PO_FILE + ". Creating.");
-             try { // Try to create file/directory
-                 File parentDir = file.getParentFile();
-                 if (parentDir != null && !parentDir.exists()) { parentDir.mkdirs(); }
-                 file.createNewFile();
-             } catch (IOException | SecurityException ioe) {
-                  JOptionPane.showMessageDialog(this, "Error creating PO file: " + ioe.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-             }
-            clearDetailsPanel(); // Clear details even if file not found
-            return;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            int lineNumber = 0;
-            while ((line = reader.readLine()) != null) {
-                 lineNumber++;
-                if (line.trim().isEmpty()) continue;
-
-                String[] data = line.split("\\|");
-                // Expecting 10 columns in file: POID|PRID|ItemID|SuppID|Qty|Date|OrdBy|RecBy|AppBy|Status
-                if (data.length >= 10) { // Need all 10 fields for full details
-                     // Store the full data row
-                     fullPoData.add(data);
-                     // Add ONLY PO ID to the visible table model
-                     tableModel.addRow(new Object[]{data[0], null}); // data[0] is PO ID, null for Actions
-                } else {
-                    System.err.println("Skipping malformed line #" + lineNumber + " in " + PO_FILE + " (expected 10 fields, got " + data.length + "): " + line);
-                }
+        fullPoData.clear();         // Clear stored full data
+        List<String[]> dataList = poController.loadPurchaseOrders();
+        for (String[] data : dataList) {
+            if (data.length >= 1) {
+                tableModel.addRow(new Object[]{data[0], null}); // data[0] is PO ID, null for Actions
+                fullPoData.add(data);
             }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error loading purchase orders: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         }
         clearDetailsPanel(); // Clear details after loading
     }
 
-    // Add PO: Saves full data to file, reloads table/data
-    private void addPurchaseOrder() {
-        // --- Validation (same as before) ---
-        String prID = prIDField.getText().trim();
-        String itemID = itemIDField.getText().trim();
-        String supplierID = supplierIDField.getText().trim();
-        String quantityStr = quantityField.getText().trim();
-        String orderDate = orderDateField.getText().trim();
-
-        if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill all required fields!", "Input Error", JOptionPane.ERROR_MESSAGE); return;
-        }
-        int quantity;
-        try { quantity = Integer.parseInt(quantityStr); if (quantity <= 0) throw new NumberFormatException(); }
-        catch (NumberFormatException e) { JOptionPane.showMessageDialog(this, "Quantity must be a positive number.", "Input Error", JOptionPane.ERROR_MESSAGE); return; }
-        if (!orderDate.matches("\\d{2}-\\d{2}-\\d{4}")) { JOptionPane.showMessageDialog(this, "Order Date must be in DD-MM-YYYY format.", "Input Error", JOptionPane.ERROR_MESSAGE); return; }
-        // --- End Validation ---
-
-        String orderBy = mapRoleToID((String) orderByDropdown.getSelectedItem());
-        String receivedBy = mapRoleToID((String) receivedByDropdown.getSelectedItem());
-        String approvedBy = mapRoleToID((String) approvedByDropdown.getSelectedItem());
-        String status = "Pending"; // Default status
-
-        int poID = generatePOID();
-         if (poID < 0) { JOptionPane.showMessageDialog(this, "Could not generate PO ID.", "Error", JOptionPane.ERROR_MESSAGE); return; }
-        String formattedPOID = String.format("%04d", poID);
-
-        // File structure: POID|PRID|ItemID|SuppID|Qty|Date|OrdBy|RecBy|AppBy|Status
-        String newPO = String.join("|", formattedPOID, prID, itemID, supplierID, String.valueOf(quantity), orderDate, orderBy, receivedBy, approvedBy, status);
-
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PO_FILE, true))) {
-            writer.write(newPO);
-            writer.newLine();
-            JOptionPane.showMessageDialog(this, "Purchase Order (PO ID: " + formattedPOID + ") added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-
-             // Clear input fields
-             prIDField.setText(""); itemIDField.setText(""); supplierIDField.setText("");
-             quantityField.setText(""); orderDateField.setText("");
-             orderByDropdown.setSelectedIndex(0); receivedByDropdown.setSelectedIndex(0); approvedByDropdown.setSelectedIndex(0);
-
-            loadPurchaseOrders(); // Reload data (this will also clear details panel)
-            tabbedPane.setSelectedIndex(1); // Switch to PO List tab
-
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving purchase order: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
-
-
-     // View PO: Called by button editor, displays details in the lower panel
-     public void viewPO(int modelRowIndex) {
-         if (modelRowIndex >= 0 && modelRowIndex < fullPoData.size()) {
+    // View PO: Called by button editor, displays details in the lower panel
+    public void viewPO(int modelRowIndex) {
+        if (modelRowIndex >= 0 && modelRowIndex < fullPoData.size()) {
             String[] data = fullPoData.get(modelRowIndex); // Get full data for this row
             displayDetails(data); // Populate the details panel
-         } else {
-             System.err.println("viewPO called with invalid model row index: " + modelRowIndex);
-             clearDetailsPanel(); // Clear details if index is bad
-         }
-     }
+        } else {
+            System.err.println("viewPO called with invalid model row index: " + modelRowIndex);
+            clearDetailsPanel(); // Clear details if index is bad
+        }
+    }
 
     // Helper method to populate the details panel fields
     private void displayDetails(String[] data) {
@@ -429,39 +351,14 @@ public class po_e extends JPanel {
         detailStatusLabel.setText("---");
     }
 
-
-     // Search: Filters table based on PO ID (column 0)
-     private void searchPO() {
-         String searchText = searchField.getText().trim();
-         if (searchText.isEmpty()) {
-             sorter.setRowFilter(null); // Clear filter
-         } else {
-             // Filter based on PO ID column (index 0) only, case-insensitive
-             try {
-                 // Use Pattern.quote to treat search text literally (avoid regex issues)
-                 RowFilter<DefaultTableModel, Object> rf = RowFilter.regexFilter("(?i)" + Pattern.quote(searchText), 0);
-                 sorter.setRowFilter(rf);
-             } catch (java.util.regex.PatternSyntaxException e) {
-                 JOptionPane.showMessageDialog(this,"Invalid search pattern","Search Error", JOptionPane.ERROR_MESSAGE);
-                 sorter.setRowFilter(null);
-             }
-         }
-         clearDetailsPanel(); // Clear details when searching
-     }
-
-
-    // Delete PO: Called by button editor, removes from file, model, and full data list
     public void deletePO(int modelRowIndex) {
-         if (modelRowIndex >= 0 && modelRowIndex < tableModel.getRowCount() && modelRowIndex < fullPoData.size()) {
-            // Get PO ID from the model (it's the primary key)
+        if (modelRowIndex >= 0 && modelRowIndex < tableModel.getRowCount() && modelRowIndex < fullPoData.size()) {
             String poIDToDelete = tableModel.getValueAt(modelRowIndex, 0).toString();
-            // Get PR ID from the stored full data for confirmation message
             String prIDInfo = "N/A";
-             String[] rowData = fullPoData.get(modelRowIndex);
-             if (rowData != null && rowData.length > 1) {
-                 prIDInfo = rowData[1];
-             }
-
+            String[] rowData = fullPoData.get(modelRowIndex);
+            if (rowData != null && rowData.length > 1) {
+                prIDInfo = rowData[1];
+            }
 
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Are you sure you want to delete PO ID: " + poIDToDelete + " (PR ID: " + prIDInfo + ")?",
@@ -470,158 +367,123 @@ public class po_e extends JPanel {
                     JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                if (deletePOFromFile(poIDToDelete)) {
-                    // Remove from the stored full data list *first*
+                if (poController.deletePurchaseOrder(poIDToDelete)) {
                     fullPoData.remove(modelRowIndex);
-                    // Then remove from the visible table model
                     tableModel.removeRow(modelRowIndex);
                     JOptionPane.showMessageDialog(this, "PO " + poIDToDelete + " deleted successfully.", "Deleted", JOptionPane.INFORMATION_MESSAGE);
-                    clearDetailsPanel(); // Clear details panel after deletion
-                } // Error message shown in deletePOFromFile
-            }
-        } else {
-             System.err.println("deletePO called with invalid model row index: " + modelRowIndex);
-        }
-    }
-
-
-    // --- Unchanged Helper Methods ---
-    private String mapRoleToID(String role) {
-        // (Same as before)
-         return switch (role) {
-            case "Purchase Manager" -> "1004";
-            case "Inventory Manager" -> "1003";
-            case "Financial Manager" -> "1002";
-            case "Administrator" -> "1001";
-            default -> "Unknown";
-        };
-    }
-
-    private int generatePOID() {
-        // (Same as before, returns -1 on error)
-        int maxID = 0;
-        File file = new File(PO_FILE);
-         if (!file.exists()) return 1;
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                 if (line.trim().isEmpty()) continue;
-                String[] data = line.split("\\|");
-                if (data.length > 0 && !data[0].trim().isEmpty()) {
-                    try {
-                        int currentID = Integer.parseInt(data[0].trim());
-                        if (currentID > maxID) maxID = currentID;
-                    } catch (NumberFormatException ignored) {}
+                    clearDetailsPanel();
                 }
             }
-        } catch (IOException e) {
-             JOptionPane.showMessageDialog(this, "Error reading PO file for ID generation: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace(); return -1;
+        } else {
+            System.err.println("deletePO called with invalid model row index: " + modelRowIndex);
         }
-        return maxID + 1;
     }
 
-    private boolean deletePOFromFile(String poIDToDelete) {
-        // (Same as before, using temp file)
-         File inputFile = new File(PO_FILE);
-        File tempFile = null;
-        try { tempFile = File.createTempFile("temp_po_", ".txt", inputFile.getParentFile()); }
-        catch (IOException e) { JOptionPane.showMessageDialog(this, "Could not create temporary file: " + e.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE); return false; }
-
-        boolean deleted = false, found = false;
-         if (!inputFile.exists()) { JOptionPane.showMessageDialog(this, "PO file not found.", "Error", JOptionPane.ERROR_MESSAGE); if (tempFile.exists()) tempFile.delete(); return false; }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] data = line.split("\\|");
-                 if (data.length > 0 && data[0].equals(poIDToDelete)) { found = true; }
-                 else { writer.write(line); writer.newLine(); }
+    private void searchPO() {
+        String searchText = searchField.getText().trim();
+        if (searchText.isEmpty()) {
+            sorter.setRowFilter(null); // Show all rows
+        } else {
+            RowFilter<DefaultTableModel, Object> rf = null;
+            try {
+                rf = RowFilter.regexFilter("^" + Pattern.quote(searchText), 0); // Search only in PO ID column (index 0)
+            } catch (java.util.regex.PatternSyntaxException e) {
+                return;
             }
-        } catch (IOException e) { JOptionPane.showMessageDialog(this, "Error processing PO file for deletion: " + e.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE); if (tempFile.exists()) tempFile.delete(); return false; }
-
-        if (!found) { JOptionPane.showMessageDialog(this, "Could not find PO ID " + poIDToDelete + " in the file.", "Not Found", JOptionPane.WARNING_MESSAGE); if (tempFile.exists()) tempFile.delete(); return false; }
-
-         try { // Replace original with temp
-             if (!inputFile.delete()) { System.gc(); Thread.sleep(100); if (!inputFile.delete()) throw new IOException("Could not delete original file: " + inputFile.getAbsolutePath()); }
-             if (!tempFile.renameTo(inputFile)) { // Fallback: copy content
-                 try (InputStream in = new FileInputStream(tempFile); OutputStream out = new FileOutputStream(inputFile)) { byte[] buf = new byte[8192]; int len; while ((len = in.read(buf)) > 0) out.write(buf, 0, len); deleted = true; }
-                 catch (IOException copyEx) { throw new IOException("Could not rename temp file and failed to copy back.", copyEx); }
-                 finally { if (deleted && tempFile.exists()) tempFile.delete(); }
-             } else { deleted = true; }
-         } catch (IOException | SecurityException | InterruptedException e) { JOptionPane.showMessageDialog(this, "Error updating PO file: " + e.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE); deleted = false; }
-         if (!deleted && tempFile.exists()) { System.err.println("Error occurred during file replace, temp file might still exist: "+tempFile.getAbsolutePath()); }
-
-        return deleted;
+            sorter.setRowFilter(rf);
+        }
     }
 
-    // --- Main method for testing ---
-    public static void main(String[] args) {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
-        catch (Exception e) { System.err.println("Couldn't set system look and feel."); }
+    private String mapRoleToID(String role) {
+        switch (role) {
+            case "Purchase Manager": return "PM";
+            case "Administrator": return "AD";
+            case "Inventory Manager": return "IM";
+            case "Financial Manager": return "FM";
+            default: return "";
+        }
+    }
 
+    // Custom renderer for the Actions column
+    private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
+        private final JButton viewButton = new JButton("View");
+        private final JButton deleteButton = new JButton("Delete");
+
+        public ActionButtonsRenderer() {
+            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            add(viewButton);
+            add(deleteButton);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+                viewButton.setForeground(table.getSelectionForeground());
+                deleteButton.setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+                viewButton.setForeground(table.getForeground());
+                deleteButton.setForeground(Color.RED); // Make delete button red
+            }
+            return this;
+        }
+    }
+
+    // Custom editor for the Actions column
+    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
+        private final JPanel panel;
+        private final JButton viewButton;
+        private final JButton deleteButton;
+        private int currentRow;
+        private final JTable table;
+        private final po_e poPanel;
+
+        public ActionButtonsEditor(JTable table, po_e poPanel) {
+            this.table = table;
+            this.poPanel = poPanel;
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            viewButton = new JButton("View");
+            deleteButton = new JButton("Delete");
+            deleteButton.setForeground(Color.RED); // Make delete button red
+            viewButton.addActionListener(this);
+            deleteButton.addActionListener(this);
+            panel.add(viewButton);
+            panel.add(deleteButton);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            currentRow = row;
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null; // No meaningful value to return
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (e.getSource() == viewButton) {
+                poPanel.viewPO(table.convertRowIndexToModel(currentRow));
+            } else if (e.getSource() == deleteButton) {
+                poPanel.deletePO(table.convertRowIndexToModel(currentRow));
+            }
+            fireEditingStopped(); // Make sure editing stops
+        }
+    }
+
+    public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Purchase Order Management");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.getContentPane().add(new po_e());
-            frame.setMinimumSize(new Dimension(800, 650)); // Increased height for details panel
-            frame.pack();
+            frame.setSize(900, 700);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
     }
-}
-
-
-// ========================================================================
-// Helper classes for rendering and editing buttons in the JTable
-// (Keep ActionButtonsPanel, ActionButtonsRenderer, ActionButtonsEditor same as before)
-// ========================================================================
-
-class ActionButtonsPanel extends JPanel { /* ... Same as previous ... */
-    public final JButton viewButton;
-    public final JButton deleteButton;
-    private final List<ActionListener> viewActionListeners = new ArrayList<>();
-    private final List<ActionListener> deleteActionListeners = new ArrayList<>();
-
-    public ActionButtonsPanel() {
-        super(new FlowLayout(FlowLayout.CENTER, 5, 2));
-        setOpaque(true);
-        viewButton = new JButton("View"); viewButton.setMargin(new Insets(2, 5, 2, 5)); viewButton.setFocusable(false);
-        deleteButton = new JButton("Delete"); deleteButton.setMargin(new Insets(2, 5, 2, 5)); deleteButton.setFocusable(false);
-        viewButton.addActionListener(this::fireViewActionPerformed);
-        deleteButton.addActionListener(this::fireDeleteActionPerformed);
-        add(viewButton); add(deleteButton);
-    }
-    public void addViewActionListener(ActionListener listener) { if (!viewActionListeners.contains(listener)) viewActionListeners.add(listener); }
-    public void addDeleteActionListener(ActionListener listener) { if (!deleteActionListeners.contains(listener)) deleteActionListeners.add(listener); }
-    protected void fireViewActionPerformed(ActionEvent event) { ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "view", event.getWhen(), event.getModifiers()); for (ActionListener listener : new ArrayList<>(viewActionListeners)) listener.actionPerformed(newEvent); }
-    protected void fireDeleteActionPerformed(ActionEvent event) { ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete", event.getWhen(), event.getModifiers()); for (ActionListener listener : new ArrayList<>(deleteActionListeners)) listener.actionPerformed(newEvent); }
-    @Override public void setBackground(Color bg) { super.setBackground(bg); if (viewButton != null && !viewButton.isBackgroundSet()) viewButton.setBackground(bg); if (deleteButton != null && !deleteButton.isBackgroundSet()) deleteButton.setBackground(bg); }
-}
-
-class ActionButtonsRenderer extends ActionButtonsPanel implements TableCellRenderer { /* ... Same as previous ... */
-    public ActionButtonsRenderer() { super(); setName("Table.cellRenderer"); }
-    @Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) { if (isSelected) { setForeground(table.getSelectionForeground()); setBackground(table.getSelectionBackground()); } else { setForeground(table.getForeground()); setBackground(UIManager.getColor("Button.background")); } return this; }
-}
-
-class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor { /* ... Same as previous ... */
-    private final ActionButtonsPanel panel = new ActionButtonsPanel();
-    private final JTable table;
-    private final po_e parentPanel;
-    private transient ActionListener viewListener, deleteListener;
-    private int editingModelRow = -1;
-    public ActionButtonsEditor(JTable table, po_e parentPanel) {
-        this.table = table; this.parentPanel = parentPanel;
-        viewListener = e -> { if (editingModelRow != -1) { parentPanel.viewPO(editingModelRow); fireEditingStopped(); } };
-        deleteListener = e -> { if (editingModelRow != -1) { int rowToDelete = editingModelRow; parentPanel.deletePO(rowToDelete); /* Table model listener should handle stop */ SwingUtilities.invokeLater(this::fireEditingStopped); } }; // Stop editing after action
-        panel.addViewActionListener(viewListener); panel.addDeleteActionListener(deleteListener);
-    }
-    @Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) { this.editingModelRow = table.convertRowIndexToModel(row); panel.setBackground(table.getSelectionBackground()); panel.setForeground(table.getSelectionForeground()); return panel; }
-    @Override public Object getCellEditorValue() { return null; }
-    @Override public boolean stopCellEditing() { editingModelRow = -1; return super.stopCellEditing(); }
-    @Override public void cancelCellEditing() { editingModelRow = -1; super.cancelCellEditing(); }
 }

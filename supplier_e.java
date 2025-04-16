@@ -1,40 +1,32 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.*;
+import java.util.*;
 
 public class supplier_e extends JPanel {
     private JTextField nameField, contactField, emailField, addressField, itemField;
     private JTable supplierTable;
     private DefaultTableModel tableModel;
-    private static final String FILE_NAME = "TXT/suppliers.txt";
+    private static final String FILE_NAME = "TXT/suppliers.txt"; // Your folder path
     private int currentId = 3000;
 
     public supplier_e() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(1280, 450));
 
-        // Title Panel
         JPanel titlePanel = new JPanel();
         JLabel titleLabel = new JLabel("Supplier Management", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titlePanel.add(titleLabel);
         add(titlePanel, BorderLayout.NORTH);
 
-        // Main Panel
         JPanel mainPanel = new JPanel(new GridLayout(1, 2, 10, 10));
-
-        // Left Panel - Supplier Info
-        JPanel inputPanel = createInputPanel();
-        mainPanel.add(inputPanel);
-
-        // Right Panel - Supplier List
-        JPanel tablePanel = createTablePanel();
-        mainPanel.add(tablePanel);
-
+        mainPanel.add(createInputPanel());
+        mainPanel.add(createTablePanel());
         add(mainPanel, BorderLayout.CENTER);
+
+        loadSuppliers();
     }
 
     private JPanel createInputPanel() {
@@ -42,28 +34,19 @@ public class supplier_e extends JPanel {
         inputPanel.setPreferredSize(new Dimension(280, 180));
         inputPanel.setBorder(BorderFactory.createTitledBorder("Supplier Info"));
 
-        inputPanel.add(new JLabel("Name:"));
         nameField = new JTextField(15);
-        inputPanel.add(nameField);
-
-        inputPanel.add(new JLabel("Contact No.:"));
         contactField = new JTextField(15);
-        inputPanel.add(contactField);
-
-        inputPanel.add(new JLabel("Email:"));
         emailField = new JTextField(15);
-        inputPanel.add(emailField);
-
-        inputPanel.add(new JLabel("Address:"));
         addressField = new JTextField(15);
-        inputPanel.add(addressField);
-
-        inputPanel.add(new JLabel("Item Name:"));
         itemField = new JTextField(15);
-        inputPanel.add(itemField);
+
+        inputPanel.add(new JLabel("Name:")); inputPanel.add(nameField);
+        inputPanel.add(new JLabel("Contact No.:")); inputPanel.add(contactField);
+        inputPanel.add(new JLabel("Email:")); inputPanel.add(emailField);
+        inputPanel.add(new JLabel("Address:")); inputPanel.add(addressField);
+        inputPanel.add(new JLabel("Item Name:")); inputPanel.add(itemField);
 
         JButton addButton = new JButton("Add");
-        addButton.setPreferredSize(new Dimension(100, 30));
         addButton.addActionListener(e -> addSupplier());
         inputPanel.add(addButton);
 
@@ -77,14 +60,11 @@ public class supplier_e extends JPanel {
 
         tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Item Name"}, 0);
         supplierTable = new JTable(tableModel);
-        loadSuppliers();
-
         tablePanel.add(new JScrollPane(supplierTable), BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
         JButton deleteButton = new JButton("Delete");
         deleteButton.addActionListener(e -> deleteSupplier());
-
         JButton editButton = new JButton("Edit");
         editButton.addActionListener(e -> editSupplier());
 
@@ -96,11 +76,11 @@ public class supplier_e extends JPanel {
     }
 
     private void addSupplier() {
-        String name = nameField.getText();
-        String contact = contactField.getText();
-        String email = emailField.getText();
-        String address = addressField.getText();
-        String item = itemField.getText();
+        String name = nameField.getText().trim();
+        String contact = contactField.getText().trim();
+        String email = emailField.getText().trim();
+        String address = addressField.getText().trim();
+        String item = itemField.getText().trim();
 
         if (name.isEmpty() || contact.isEmpty() || email.isEmpty() || address.isEmpty() || item.isEmpty()) {
             JOptionPane.showMessageDialog(this, "All fields must be filled", "Error", JOptionPane.ERROR_MESSAGE);
@@ -125,25 +105,22 @@ public class supplier_e extends JPanel {
     private void editSupplier() {
         int selectedRow = supplierTable.getSelectedRow();
         if (selectedRow != -1) {
-            String id = tableModel.getValueAt(selectedRow, 0).toString();
             String name = tableModel.getValueAt(selectedRow, 1).toString();
             String contact = tableModel.getValueAt(selectedRow, 2).toString();
             String email = tableModel.getValueAt(selectedRow, 3).toString();
             String address = tableModel.getValueAt(selectedRow, 4).toString();
             String item = tableModel.getValueAt(selectedRow, 5).toString();
 
-            supplier_v dialog = new supplier_v(
-                (JFrame)SwingUtilities.getWindowAncestor(this),
-                name, contact, email, address, item
-            );
+            supplier_v dialog = new supplier_v((JFrame) SwingUtilities.getWindowAncestor(this), name, contact, email, address, item);
             dialog.setVisible(true);
+
             if (dialog.isSaved()) {
                 String[] newData = dialog.getEditedData();
-                tableModel.setValueAt(newData[0], selectedRow, 1); // name
-                tableModel.setValueAt(newData[1], selectedRow, 2); // contact
-                tableModel.setValueAt(newData[2], selectedRow, 3); // email
-                tableModel.setValueAt(newData[3], selectedRow, 4); // address
-                tableModel.setValueAt(newData[4], selectedRow, 5); // item
+                tableModel.setValueAt(newData[0], selectedRow, 1);
+                tableModel.setValueAt(newData[1], selectedRow, 2);
+                tableModel.setValueAt(newData[2], selectedRow, 3);
+                tableModel.setValueAt(newData[3], selectedRow, 4);
+                tableModel.setValueAt(newData[4], selectedRow, 5);
                 saveSuppliers();
             }
         } else {
@@ -160,19 +137,18 @@ public class supplier_e extends JPanel {
     }
 
     private void saveSuppliers() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
-                writer.write(tableModel.getValueAt(i, 0) + "|" +
-                             tableModel.getValueAt(i, 1) + "|" +
-                             tableModel.getValueAt(i, 2) + "|" +
-                             tableModel.getValueAt(i, 3) + "|" +
-                             tableModel.getValueAt(i, 4) + "|" +
-                             tableModel.getValueAt(i, 5) + "\n");
+                writer.println(
+                        tableModel.getValueAt(i, 0) + "|" +
+                        tableModel.getValueAt(i, 1) + "|" +
+                        tableModel.getValueAt(i, 2) + "|" +
+                        tableModel.getValueAt(i, 3) + "|" +
+                        tableModel.getValueAt(i, 4) + "|" +
+                        tableModel.getValueAt(i, 5));
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error saving suppliers: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error saving suppliers: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -183,17 +159,15 @@ public class supplier_e extends JPanel {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length == 6) {
-                    int id = Integer.parseInt(data[0]);
-                    tableModel.addRow(data);
+                String[] parts = line.split("\\|");
+                if (parts.length == 6) {
+                    int id = Integer.parseInt(parts[0]);
+                    tableModel.addRow(parts);
                     currentId = Math.max(currentId, id + 1);
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error loading suppliers: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error loading suppliers: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

@@ -1,4 +1,3 @@
-
 import java.awt.*;
 import javax.swing.*;
 
@@ -51,14 +50,25 @@ public class sm extends JPanel {
     private void switchContent(String className) {
         try {
             contentPanel.removeAll();
-            Class<?> clazz = Class.forName(className);
-            JPanel panel = (JPanel) clazz.getDeclaredConstructor().newInstance();
-            contentPanel.add(panel, BorderLayout.CENTER);
+
+            // Special handling for item_e
+            if ("item_e".equals(className)) {
+                contentPanel.add(new item_e(), BorderLayout.CENTER);
+            }
+            // Add other special cases if needed
+            else {
+                Class<?> clazz = Class.forName(className);
+                JPanel panel = (JPanel) clazz.getDeclaredConstructor().newInstance();
+                contentPanel.add(panel, BorderLayout.CENTER);
+            }
+
             contentPanel.revalidate();
             contentPanel.repaint();
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error opening " + className, "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null,
+                    "Error opening " + className + ": " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

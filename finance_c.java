@@ -1,3 +1,4 @@
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +14,8 @@ public class finance_c {
     private Double amount;
     private String verified_by;
 
-    public finance_c(String finance_id, String po_id, String approval_status, String payment_status, 
-                   String payment_date, Double amount, String verified_by) {
+    public finance_c(String finance_id, String po_id, String approval_status, String payment_status,
+            String payment_date, Double amount, String verified_by) {
         this.finance_id = finance_id;
         this.po_id = po_id;
         this.approval_status = approval_status;
@@ -83,8 +84,8 @@ public class finance_c {
 
     // Convert to a formatted string for file storage
     public String toFileString() {
-        return finance_id + "|" + po_id + "|" + approval_status + "|" + payment_status + "|" + 
-               payment_date + "|" + amount + "|" + verified_by;
+        return finance_id + "|" + po_id + "|" + approval_status + "|" + payment_status + "|"
+                + payment_date + "|" + amount + "|" + verified_by;
     }
 }
 
@@ -103,8 +104,8 @@ class FinanceController {
                 if (parts.length == 7) {
                     try {
                         Double amount = Double.parseDouble(parts[5]);
-                        finance_c record = new finance_c(parts[0], parts[1], parts[2], parts[3], 
-                                                   parts[4], amount, parts[6]);
+                        finance_c record = new finance_c(parts[0], parts[1], parts[2], parts[3],
+                                parts[4], amount, parts[6]);
                         records.add(record);
                     } catch (NumberFormatException e) {
                         System.out.println("Error parsing amount for record: " + line);

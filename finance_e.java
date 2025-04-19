@@ -13,30 +13,30 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class finance_e extends JPanel {
 
-    private static final String INVENTORY_FILE = "TXT/inventory.txt";
-    private static final String ITEMS_FILE = "TXT/items.txt";
+    private static final String FINANCE_FILE = "TXT/finance.txt";
     private static final String STATUS_PENDING = "Pending";
-    private static final String STATUS_DELETED = "Deleted";
+    private static final String STATUS_VERIFIED = "Verified";
+    private static final String STATUS_NOT_VERIFIED = "Not Verified";
+    private static final String STATUS_PAID = "Paid";
+    private static final String STATUS_UNPAID = "Unpaid";
 
     private JTabbedPane tabbedPane;
     private JPanel financeInfoPanel;
     private JPanel financeListPanel;
 
-    private JComboBox<String> poIdInfoComboBox;
-    private JTextField paymentStatusInfoField;
+    private JTextField financeIdInfoField;
+    private JTextField poIdInfoField;
+    private JComboBox<String> approvalStatusInfoCombo;
+    private JComboBox<String> paymentStatusInfoCombo;
     private JTextField paymentDateInfoField;
     private JTextField amountInfoField;
     private JButton addButton;
 
-    private DefaultTableModel financeListTableModelTop = new DefaultTableModel(new Object[]{"Finance ID - (Status)", "Actions"}, 0) {
+    private DefaultTableModel financeListTableModelTop = new DefaultTableModel(new Object[]{"Finance ID", "Actions"}, 0) {
         @Override
         public boolean isCellEditable(int row, int column) {
             return column == 1;
@@ -51,25 +51,22 @@ public class finance_e extends JPanel {
     private JScrollPane financeListScrollPaneTop;
 
     private JTextField financeIdUpdateField;
-    private JComboBox<String> poIdUpdateComboBox;
-    private JTextField paymentStatusUpdateField;
+    private JTextField poIdUpdateField;
+    private JComboBox<String> approvalStatusUpdateCombo;
+    private JComboBox<String> paymentStatusUpdateCombo;
     private JTextField paymentDateUpdateField;
     private JTextField amountUpdateField;
-    private JTextField updateByUpdateField;
-    private JTextField statusUpdateField;
+    private JTextField verifiedByUpdateField;
     private JButton updateButton;
 
-    private List<InventoryRecord> financeRecords = new ArrayList<>();
-    private Map<String, ItemDetails> itemDetailsMap = new HashMap<>();
+    private List<FinanceRecord> financeRecords = new ArrayList<>();
 
     public finance_e() {
-        this(new ArrayList<>(), new HashMap<>());
+        this(new ArrayList<>());
     }
 
-    public finance_e(List<InventoryRecord> financeRecords, Map<String, ItemDetails> itemDetailsMap) {
+    public finance_e(List<FinanceRecord> financeRecords) {
         this.financeRecords = financeRecords;
-        this.itemDetailsMap = itemDetailsMap;
-        loadItemDetailsForDropdown();
         setLayout(new BorderLayout());
 
         tabbedPane = new JTabbedPane();
@@ -100,17 +97,19 @@ public class finance_e extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
 
+        JLabel financeIdLabel = new JLabel("Finance ID:");
+        financeIdInfoField = new JTextField(15);
+        financeIdInfoField.setEditable(false);
+        financeIdInfoField.setText(generateNewFinanceId());
+
         JLabel poIdLabel = new JLabel("PO ID:");
-        DefaultComboBoxModel<String> poIdComboBoxModel = new DefaultComboBoxModel<>();
-        for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
-            ItemDetails details = entry.getValue();
-            poIdComboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
-        }
-        poIdInfoComboBox = new JComboBox<>(poIdComboBoxModel);
-        poIdInfoComboBox.setMaximumRowCount(15);
+        poIdInfoField = new JTextField(15);
+
+        JLabel approvalStatusLabel = new JLabel("Approval Status:");
+        approvalStatusInfoCombo = new JComboBox<>(new String[]{STATUS_PENDING, STATUS_VERIFIED, STATUS_NOT_VERIFIED});
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusInfoField = new JTextField(15);
+        paymentStatusInfoCombo = new JComboBox<>(new String[]{STATUS_PAID, STATUS_UNPAID});
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateInfoField = new JTextField(15);
@@ -122,72 +121,82 @@ public class finance_e extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        inputPanel.add(poIdLabel, gbc);
+        inputPanel.add(financeIdLabel, gbc);
         gbc.gridx = 1;
-        inputPanel.add(poIdInfoComboBox, gbc);
+        inputPanel.add(financeIdInfoField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        inputPanel.add(paymentStatusLabel, gbc);
+        inputPanel.add(poIdLabel, gbc);
         gbc.gridx = 1;
-        inputPanel.add(paymentStatusInfoField, gbc);
+        inputPanel.add(poIdInfoField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
+        inputPanel.add(approvalStatusLabel, gbc);
+        gbc.gridx = 1;
+        inputPanel.add(approvalStatusInfoCombo, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        inputPanel.add(paymentStatusLabel, gbc);
+        gbc.gridx = 1;
+        inputPanel.add(paymentStatusInfoCombo, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         inputPanel.add(paymentDateLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(paymentDateInfoField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 5;
         inputPanel.add(amountLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(amountInfoField, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 4;
+        gbc.gridy = 6;
         gbc.anchor = GridBagConstraints.EAST;
         inputPanel.add(addButton, gbc);
 
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String selectedItem = (String) poIdInfoComboBox.getSelectedItem();
-                if (selectedItem == null || selectedItem.isEmpty()) {
-                    JOptionPane.showMessageDialog(finance_e.this, "Please select a PO ID", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                String poId = selectedItem.split(" ")[1];
-                String paymentStatus = paymentStatusInfoField.getText().trim();
+                String financeId = financeIdInfoField.getText().trim();
+                String poId = poIdInfoField.getText().trim();
+                String approvalStatus = (String) approvalStatusInfoCombo.getSelectedItem();
+                String paymentStatus = (String) paymentStatusInfoCombo.getSelectedItem();
                 String paymentDate = paymentDateInfoField.getText().trim();
                 String amountText = amountInfoField.getText().trim();
 
-                if (paymentStatus.isEmpty() || paymentDate.isEmpty() || amountText.isEmpty()) {
+                if (financeId.isEmpty() || poId.isEmpty() || paymentDate.isEmpty() || amountText.isEmpty()) {
                     JOptionPane.showMessageDialog(finance_e.this, "Please fill in all fields", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 try {
                     double amount = Double.parseDouble(amountText);
-                    String financeId = generateNewFinanceId();
                     
-                    InventoryRecord newRecord = new InventoryRecord(
+                    FinanceRecord newRecord = new FinanceRecord(
                             financeId,
                             poId,
-                            0, // stockLevel not used
+                            approvalStatus,
+                            paymentStatus,
                             paymentDate,
-                            0, // reorderQuantity not used
-                            Integer.parseInt(login_c.currentUserId),
-                            paymentStatus
+                            amount,
+                            Integer.parseInt(login_c.currentUserId)
                     );
                     
                     financeRecords.add(newRecord);
                     saveFinanceData();
                     populateFinanceListTableTop();
                     
-                    poIdInfoComboBox.setSelectedIndex(-1);
-                    paymentStatusInfoField.setText("");
+                    // Reset fields and generate new ID
+                    financeIdInfoField.setText(generateNewFinanceId());
+                    poIdInfoField.setText("");
+                    approvalStatusInfoCombo.setSelectedIndex(0);
+                    paymentStatusInfoCombo.setSelectedIndex(0);
                     paymentDateInfoField.setText("");
                     amountInfoField.setText("");
                     
@@ -243,30 +252,26 @@ public class finance_e extends JPanel {
         financeIdUpdateField.setEditable(false);
 
         JLabel poIdLabelUpdate = new JLabel("PO ID:");
-        DefaultComboBoxModel<String> poIdUpdateComboBoxModel = new DefaultComboBoxModel<>();
-        for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
-            ItemDetails details = entry.getValue();
-            poIdUpdateComboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
-        }
-        poIdUpdateComboBox = new JComboBox<>(poIdUpdateComboBoxModel);
-        poIdUpdateComboBox.setMaximumRowCount(15);
+        poIdUpdateField = new JTextField(15);
+        poIdUpdateField.setEditable(false); // Made non-editable
+
+        JLabel approvalStatusLabel = new JLabel("Approval Status:");
+        approvalStatusUpdateCombo = new JComboBox<>(new String[]{STATUS_PENDING, STATUS_VERIFIED, STATUS_NOT_VERIFIED});
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusUpdateField = new JTextField(15);
+        paymentStatusUpdateCombo = new JComboBox<>(new String[]{STATUS_PAID, STATUS_UNPAID});
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateUpdateField = new JTextField(15);
+        paymentDateUpdateField.setEditable(false); // Made non-editable
 
         JLabel amountLabel = new JLabel("Amount:");
         amountUpdateField = new JTextField(15);
+        amountUpdateField.setEditable(false); // Made non-editable
 
-        JLabel updateByLabelUpdate = new JLabel("Update By (User ID):");
-        updateByUpdateField = new JTextField(15);
-        updateByUpdateField.setEditable(false);
-
-        JLabel statusLabel = new JLabel("Status:");
-        statusUpdateField = new JTextField(15);
-        statusUpdateField.setEditable(false);
+        JLabel verifiedByLabel = new JLabel("Verified By:");
+        verifiedByUpdateField = new JTextField(15);
+        verifiedByUpdateField.setEditable(false);
 
         updateButton = new JButton("Update");
 
@@ -280,37 +285,37 @@ public class finance_e extends JPanel {
         gbc.gridy = 1;
         bottomPanel.add(poIdLabelUpdate, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(poIdUpdateComboBox, gbc);
+        bottomPanel.add(poIdUpdateField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
-        bottomPanel.add(paymentStatusLabel, gbc);
+        bottomPanel.add(approvalStatusLabel, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(paymentStatusUpdateField, gbc);
+        bottomPanel.add(approvalStatusUpdateCombo, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 3;
+        bottomPanel.add(paymentStatusLabel, gbc);
+        gbc.gridx = 1;
+        bottomPanel.add(paymentStatusUpdateCombo, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         bottomPanel.add(paymentDateLabel, gbc);
         gbc.gridx = 1;
         bottomPanel.add(paymentDateUpdateField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         bottomPanel.add(amountLabel, gbc);
         gbc.gridx = 1;
         bottomPanel.add(amountUpdateField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
-        bottomPanel.add(updateByLabelUpdate, gbc);
-        gbc.gridx = 1;
-        bottomPanel.add(updateByUpdateField, gbc);
-
-        gbc.gridx = 0;
         gbc.gridy = 6;
-        bottomPanel.add(statusLabel, gbc);
+        bottomPanel.add(verifiedByLabel, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(statusUpdateField, gbc);
+        bottomPanel.add(verifiedByUpdateField, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 7;
@@ -322,30 +327,24 @@ public class finance_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String financeId = financeIdUpdateField.getText();
                 boolean found = false;
-                for (InventoryRecord record : financeRecords) {
-                    if (record.getInventoryId().equals(financeId) {
+                for (FinanceRecord record : financeRecords) {
+                    if (record.getFinanceId().equals(financeId)) {
                         found = true;
                         int confirm = JOptionPane.showConfirmDialog(
                                 finance_e.this,
-                                "Are you sure you want to update Finance ID: " + record.getInventoryId() + "?",
+                                "Are you sure you want to update Finance ID: " + record.getFinanceId() + "?",
                                 "Confirm Update",
                                 JOptionPane.YES_NO_OPTION);
                         if (confirm == JOptionPane.YES_OPTION) {
-                            String selectedItem = (String) poIdUpdateComboBox.getSelectedItem();
-                            if (selectedItem != null) {
-                                String poId = selectedItem.split(" ")[1];
-                                record.setItemId(poId);
-                            }
-                            record.setLastUpdated(paymentDateUpdateField.getText());
-                            record.setReorderQuantity(0); // Not used
-                            record.setUpdatedBy(Integer.parseInt(login_c.currentUserId));
-                            record.setStatus(paymentStatusUpdateField.getText());
+                            // PO ID, Payment Date and Amount are not updated as they are now read-only
+                            record.setApprovalStatus((String) approvalStatusUpdateCombo.getSelectedItem());
+                            record.setPaymentStatus((String) paymentStatusUpdateCombo.getSelectedItem());
+                            record.setVerifiedBy(Integer.parseInt(login_c.currentUserId));
                             
-                            JOptionPane.showMessageDialog(finance_e.this, "Finance updated successfully! Updated By: " + login_c.currentUserId, "Success", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(finance_e.this, "Finance updated successfully! Verified By: " + login_c.currentUserId, "Success", JOptionPane.INFORMATION_MESSAGE);
                             clearUpdateFields();
                             populateFinanceListTableTop();
                             saveFinanceData();
-                            updatePoIdDropdown();
                         } else {
                             JOptionPane.showMessageDialog(finance_e.this, "Update cancelled.", "Cancelled", JOptionPane.INFORMATION_MESSAGE);
                         }
@@ -364,14 +363,17 @@ public class finance_e extends JPanel {
 
     public void populateFinanceListTableTop() {
         financeListTableModelTop.setRowCount(0);
-        for (InventoryRecord record : financeRecords) {
-            financeListTableModelTop.addRow(new Object[]{record.getInventoryId() + " - (" + record.getStatus() + ")", new ButtonPanel(record)});
+        for (FinanceRecord record : financeRecords) {
+            financeListTableModelTop.addRow(new Object[]{
+                record.getFinanceId(),
+                new ButtonPanel(record)
+            });
         }
     }
 
     private void loadFinanceData() {
         financeRecords.clear();
-        try (BufferedReader br = new BufferedReader(new FileReader(INVENTORY_FILE))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(FINANCE_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] data = line.split("\\|");
@@ -379,19 +381,27 @@ public class finance_e extends JPanel {
                     try {
                         String financeId = data[0].trim();
                         String poId = data[1].trim();
-                        int currentStock = Integer.parseInt(data[2].trim());
-                        String paymentDate = data[3].trim();
-                        int reorderLevel = Integer.parseInt(data[4].trim());
-                        int updatedBy = Integer.parseInt(data[5].trim());
-                        String status = data[6].trim();
+                        String approvalStatus = data[2].trim();
+                        String paymentStatus = data[3].trim();
+                        String paymentDate = data[4].trim();
+                        double amount = Double.parseDouble(data[5].trim());
+                        int verifiedBy = Integer.parseInt(data[6].trim());
 
-                        InventoryRecord record = new InventoryRecord(financeId, poId, currentStock, paymentDate, reorderLevel, updatedBy, status);
+                        FinanceRecord record = new FinanceRecord(
+                                financeId,
+                                poId,
+                                approvalStatus,
+                                paymentStatus,
+                                paymentDate,
+                                amount,
+                                verifiedBy
+                        );
                         financeRecords.add(record);
                     } catch (NumberFormatException e) {
-                        System.err.println("Error parsing data in line (inventory.txt): " + line);
+                        System.err.println("Error parsing data in line (finance.txt): " + line);
                     }
                 } else {
-                    System.err.println("Skipping invalid line in inventory.txt: " + line + ". Expected 7 columns.");
+                    System.err.println("Skipping invalid line in finance.txt: " + line + ". Expected 7 columns.");
                 }
             }
         } catch (IOException e) {
@@ -399,51 +409,16 @@ public class finance_e extends JPanel {
         }
     }
 
-    private void loadItemDetailsForDropdown() {
-        itemDetailsMap.clear();
-        List<ItemDetails> tempList = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length == 6) {
-                    String itemId = data[0].trim();
-                    String itemName = data[1].trim();
-                    String supplierId = data[2].trim();
-                    String category = data[3].trim();
-                    double price = Double.parseDouble(data[4].trim());
-                    int stockQuantity = Integer.parseInt(data[5].trim());
-                    tempList.add(new ItemDetails(itemId, itemName, category, stockQuantity));
-                } else {
-                    System.err.println("Skipping invalid line in items.txt: " + line + ". Expected itemId, ItemName, SupplierId, Category, Price, StockQuantity.");
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("IOException caught in loadItemDetailsForDropdown(): " + e.getMessage());
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error reading items file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        Collections.sort(tempList, Comparator.comparing(ItemDetails::getItemId));
-
-        itemDetailsMap.clear();
-        for (ItemDetails itemDetails : tempList) {
-            itemDetailsMap.put(itemDetails.getItemId(), itemDetails);
-        }
-    }
-
     public void saveFinanceData() {
-        try (FileWriter writer = new FileWriter(INVENTORY_FILE)) {
-            for (InventoryRecord record : financeRecords) {
-                writer.write(record.getInventoryId() + "|"
-                        + record.getItemId() + "|"
-                        + record.getStockLevel() + "|"
-                        + record.getLastUpdated() + "|"
-                        + record.getReorderQuantity() + "|"
-                        + record.getUpdatedBy() + "|"
-                        + record.getStatus() + "\n");
+        try (FileWriter writer = new FileWriter(FINANCE_FILE)) {
+            for (FinanceRecord record : financeRecords) {
+                writer.write(record.getFinanceId() + "|"
+                        + record.getPoId() + "|"
+                        + record.getApprovalStatus() + "|"
+                        + record.getPaymentStatus() + "|"
+                        + record.getPaymentDate() + "|"
+                        + record.getAmount() + "|"
+                        + record.getVerifiedBy() + "\n");
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving finance file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -452,167 +427,115 @@ public class finance_e extends JPanel {
 
     public String generateNewFinanceId() {
         long maxId = 0;
-        for (InventoryRecord record : financeRecords) {
+        for (FinanceRecord record : financeRecords) {
             try {
-                long currentId = Long.parseLong(record.getInventoryId());
+                long currentId = Long.parseLong(record.getFinanceId());
                 maxId = Math.max(maxId, currentId);
             } catch (NumberFormatException e) {
+                // Skip non-numeric IDs
             }
         }
         return String.valueOf(maxId + 1);
     }
 
-    private void populateUpdateFields(InventoryRecord record) {
-        financeIdUpdateField.setText(record.getInventoryId());
-        for (int i = 0; i < poIdUpdateComboBox.getItemCount(); i++) {
-            String item = poIdUpdateComboBox.getItemAt(i);
-            if (item.startsWith("ID: " + record.getItemId() + " ")) {
-                poIdUpdateComboBox.setSelectedIndex(i);
-                break;
-            }
-        }
-        paymentStatusUpdateField.setText(record.getStatus());
-        paymentDateUpdateField.setText(record.getLastUpdated());
-        amountUpdateField.setText("0"); // Not used in original, placeholder
-        updateByUpdateField.setText(String.valueOf(record.getUpdatedBy()));
-        statusUpdateField.setText(record.getStatus());
+    private void populateUpdateFields(FinanceRecord record) {
+        financeIdUpdateField.setText(record.getFinanceId());
+        poIdUpdateField.setText(record.getPoId());
+        approvalStatusUpdateCombo.setSelectedItem(record.getApprovalStatus());
+        paymentStatusUpdateCombo.setSelectedItem(record.getPaymentStatus());
+        paymentDateUpdateField.setText(record.getPaymentDate());
+        amountUpdateField.setText(String.valueOf(record.getAmount()));
+        verifiedByUpdateField.setText(String.valueOf(record.getVerifiedBy()));
     }
 
     private void clearUpdateFields() {
         financeIdUpdateField.setText("");
-        poIdUpdateComboBox.setSelectedIndex(-1);
-        paymentStatusUpdateField.setText("");
+        poIdUpdateField.setText("");
+        approvalStatusUpdateCombo.setSelectedIndex(0);
+        paymentStatusUpdateCombo.setSelectedIndex(0);
         paymentDateUpdateField.setText("");
         amountUpdateField.setText("");
-        updateByUpdateField.setText("");
-        statusUpdateField.setText("");
+        verifiedByUpdateField.setText("");
     }
 
-    private void updatePoIdDropdown() {
-        DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
-        for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
-            ItemDetails details = entry.getValue();
-            comboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
-        }
-        poIdInfoComboBox.setModel(comboBoxModel);
-        poIdInfoComboBox.setSelectedIndex(-1);
+    public static class FinanceRecord {
+        private String financeId;
+        private String poId;
+        private String approvalStatus;
+        private String paymentStatus;
+        private String paymentDate;
+        private double amount;
+        private int verifiedBy;
 
-        DefaultComboBoxModel<String> updateComboBoxModel = new DefaultComboBoxModel<>();
-        for (Map.Entry<String, ItemDetails> entry : itemDetailsMap.entrySet()) {
-            ItemDetails details = entry.getValue();
-            updateComboBoxModel.addElement(String.format("ID: %s \u00A0(Item: %s - %s)", details.getItemId(), details.getItemName(), details.getCategory()));
-        }
-        poIdUpdateComboBox.setModel(updateComboBoxModel);
-        poIdUpdateComboBox.setSelectedIndex(-1);
-    }
-
-    public static class InventoryRecord {
-        private String inventoryId;
-        private String itemId;
-        private int stockLevel;
-        private String lastUpdated;
-        private int reorderQuantity;
-        private int updatedBy;
-        private String status;
-
-        public InventoryRecord(String inventoryId, String itemId, int stockLevel, String lastUpdated, int reorderQuantity, int updatedBy, String status) {
-            this.inventoryId = inventoryId;
-            this.itemId = itemId;
-            this.stockLevel = stockLevel;
-            this.lastUpdated = lastUpdated;
-            this.reorderQuantity = reorderQuantity;
-            this.updatedBy = updatedBy;
-            this.status = status;
+        public FinanceRecord(String financeId, String poId, String approvalStatus, String paymentStatus, 
+                           String paymentDate, double amount, int verifiedBy) {
+            this.financeId = financeId;
+            this.poId = poId;
+            this.approvalStatus = approvalStatus;
+            this.paymentStatus = paymentStatus;
+            this.paymentDate = paymentDate;
+            this.amount = amount;
+            this.verifiedBy = verifiedBy;
         }
 
-        public String getInventoryId() {
-            return inventoryId;
+        public String getFinanceId() {
+            return financeId;
         }
 
-        public String getItemId() {
-            return itemId;
+        public String getPoId() {
+            return poId;
         }
 
-        public int getStockLevel() {
-            return stockLevel;
+        public String getApprovalStatus() {
+            return approvalStatus;
         }
 
-        public String getLastUpdated() {
-            return lastUpdated;
+        public String getPaymentStatus() {
+            return paymentStatus;
         }
 
-        public int getReorderQuantity() {
-            return reorderQuantity;
+        public String getPaymentDate() {
+            return paymentDate;
         }
 
-        public int getUpdatedBy() {
-            return updatedBy;
+        public double getAmount() {
+            return amount;
         }
 
-        public String getStatus() {
-            return status;
+        public int getVerifiedBy() {
+            return verifiedBy;
         }
 
-        public void setItemId(String itemId) {
-            this.itemId = itemId;
+        public void setPoId(String poId) {
+            this.poId = poId;
         }
 
-        public void setStockLevel(int stockLevel) {
-            this.stockLevel = stockLevel;
+        public void setApprovalStatus(String approvalStatus) {
+            this.approvalStatus = approvalStatus;
         }
 
-        public void setLastUpdated(String lastUpdated) {
-            this.lastUpdated = lastUpdated;
+        public void setPaymentStatus(String paymentStatus) {
+            this.paymentStatus = paymentStatus;
         }
 
-        public void setReorderQuantity(int reorderQuantity) {
-            this.reorderQuantity = reorderQuantity;
+        public void setPaymentDate(String paymentDate) {
+            this.paymentDate = paymentDate;
         }
 
-        public void setUpdatedBy(int updatedBy) {
-            this.updatedBy = updatedBy;
+        public void setAmount(double amount) {
+            this.amount = amount;
         }
 
-        public void setStatus(String status) {
-            this.status = status;
-        }
-    }
-
-    public static class ItemDetails {
-        private String itemId;
-        private String itemName;
-        private String category;
-        private int stockQuantity;
-
-        public ItemDetails(String itemId, String itemName, String category, int stockQuantity) {
-            this.itemId = itemId;
-            this.itemName = itemName;
-            this.category = category;
-            this.stockQuantity = stockQuantity;
-        }
-
-        public String getItemId() {
-            return itemId;
-        }
-
-        public String getItemName() {
-            return itemName;
-        }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public int getStockQuantity() {
-            return stockQuantity;
+        public void setVerifiedBy(int verifiedBy) {
+            this.verifiedBy = verifiedBy;
         }
     }
 
     private class ButtonPanel extends JPanel {
         private JButton viewButton;
-        private InventoryRecord record;
+        private FinanceRecord record;
 
-        public ButtonPanel(InventoryRecord record) {
+        public ButtonPanel(FinanceRecord record) {
             this.record = record;
             setLayout(new FlowLayout(FlowLayout.LEFT, 7, 0));
             viewButton = new JButton("View");
@@ -640,7 +563,7 @@ public class finance_e extends JPanel {
     private class ButtonRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            InventoryRecord record = financeRecords.get(row);
+            FinanceRecord record = financeRecords.get(row);
             if (record != null) {
                 ButtonPanel panel = new ButtonPanel(record);
                 return panel;
@@ -660,7 +583,7 @@ public class finance_e extends JPanel {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            InventoryRecord record = financeRecords.get(row);
+            FinanceRecord record = financeRecords.get(row);
             if (record != null) {
                 panel = new ButtonPanel(record);
                 return panel;
@@ -683,22 +606,6 @@ public class finance_e extends JPanel {
         public boolean shouldSelectCell(java.util.EventObject anEvent) {
             return false;
         }
-    }
-
-    private int getStockLevelFromItems(String itemId) {
-        try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length == 6 && data[0].trim().equals(itemId)) {
-                    return Integer.parseInt(data[5].trim());
-                }
-            }
-        } catch (IOException | NumberFormatException e) {
-            System.err.println("Error reading items file or parsing stock level: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return 0;
     }
 
     public static void main(String[] args) {

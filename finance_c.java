@@ -1,198 +1,159 @@
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-// Data model representing a finance record
 public class finance_c {
-
-    private String finance_id;
-    private String po_id;
-    private String approval_status;
-    private String payment_status;
-    private String payment_date;
-    private Double amount;
-    private String verified_by;
-
-    public finance_c(String finance_id, String po_id, String approval_status, String payment_status,
-            String payment_date, Double amount, String verified_by) {
-        this.finance_id = finance_id;
-        this.po_id = po_id;
-        this.approval_status = approval_status;
-        this.payment_status = payment_status;
-        this.payment_date = payment_date;
-        this.amount = amount;
-        this.verified_by = verified_by;
-    }
-
-    // Getters and setters
-    public String getFinance_id() {
-        return finance_id;
-    }
-
-    public void setFinance_id(String finance_id) {
-        this.finance_id = finance_id;
-    }
-
-    public String getPo_id() {
-        return po_id;
-    }
-
-    public void setPo_id(String po_id) {
-        this.po_id = po_id;
-    }
-
-    public String getApproval_status() {
-        return approval_status;
-    }
-
-    public void setApproval_status(String approval_status) {
-        this.approval_status = approval_status;
-    }
-
-    public String getPayment_status() {
-        return payment_status;
-    }
-
-    public void setPayment_status(String payment_status) {
-        this.payment_status = payment_status;
-    }
-
-    public String getPayment_date() {
-        return payment_date;
-    }
-
-    public void setPayment_date(String payment_date) {
-        this.payment_date = payment_date;
-    }
-
-    public Double getAmount() {
-        return amount;
-    }
-
-    public void setAmount(Double amount) {
-        this.amount = amount;
-    }
-
-    public String getVerified_by() {
-        return verified_by;
-    }
-
-    public void setVerified_by(String verified_by) {
-        this.verified_by = verified_by;
-    }
-
-    // Convert to a formatted string for file storage
-    public String toFileString() {
-        return finance_id + "|" + po_id + "|" + approval_status + "|" + payment_status + "|"
-                + payment_date + "|" + amount + "|" + verified_by;
-    }
-}
-
-// Controller class that handles finance record CRUD operations
-class FinanceController {
-
     private static final String FINANCE_FILE = "TXT/finance.txt";
+    private static final String PO_FILE = "TXT/po.txt";
+    public static final String STATUS_PENDING = "Pending";
+    public static final String STATUS_VERIFIED = "Verified";
+    public static final String STATUS_NOT_VERIFIED = "Not Verified";
+    public static final String STATUS_PAID = "Paid";
+    public static final String STATUS_UNPAID = "Unpaid";
+    public static final int DEFAULT_VERIFIED_BY = 7001;
 
-    // Load finance records from the file
-    public static List<finance_c> loadFinanceRecords() {
-        List<finance_c> records = new ArrayList<>();
+    private List<FinanceRecord> financeRecords = new ArrayList<>();
+
+    public finance_c() {
+        loadFinanceData();
+    }
+
+    public List<FinanceRecord> getFinanceRecords() {
+        return financeRecords;
+    }
+
+    public void addFinanceRecord(FinanceRecord record) {
+        financeRecords.add(record);
+        saveFinanceData();
+    }
+
+    public void updateFinanceRecord(FinanceRecord record) {
+        saveFinanceData();
+    }
+
+    public void loadFinanceData() {
+        financeRecords.clear();
         try (BufferedReader br = new BufferedReader(new FileReader(FINANCE_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length == 7) {
-                    try {
-                        Double amount = Double.parseDouble(parts[5]);
-                        finance_c record = new finance_c(parts[0], parts[1], parts[2], parts[3],
-                                parts[4], amount, parts[6]);
-                        records.add(record);
-                    } catch (NumberFormatException e) {
-                        System.out.println("Error parsing amount for record: " + line);
+                String[] data = line.split("\\|");
+                if (data.length == 7) {
+                    String financeId = data[0].trim();
+                    String poId = data[1].trim();
+                    String approvalStatus = data[2].trim();
+                    String paymentStatus = data[3].trim();
+                    String paymentDate = data[4].trim();
+                    String amount = data[5].trim();
+                    int verifiedBy = Integer.parseInt(data[6].trim());
+
+                    FinanceRecord record = new FinanceRecord(
+                            financeId,
+                            poId,
+                            approvalStatus,
+                            paymentStatus,
+                            paymentDate,
+                            amount,
+                            verifiedBy
+                    );
+                    financeRecords.add(record);
+                } else {
+                    System.err.println("Skipping invalid line in finance.txt: " + line + ". Expected 7 columns.");
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading finance file: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.err.println("Error parsing verifiedBy in finance.txt: " + e.getMessage());
+        }
+    }
+
+    public void saveFinanceData() {
+        try (FileWriter writer = new FileWriter(FINANCE_FILE)) {
+            for (FinanceRecord record : financeRecords) {
+                writer.write(record.getFinanceId() + "|"
+                        + record.getPoId() + "|"
+                        + record.getApprovalStatus() + "|"
+                        + record.getPaymentStatus() + "|"
+                        + record.getPaymentDate() + "|"
+                        + record.getAmount() + "|"
+                        + record.getVerifiedBy() + "\n");
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving finance file: " + e.getMessage());
+        }
+    }
+
+    public String generateNewFinanceId() {
+        int lastId = 8000;
+        for (FinanceRecord record : financeRecords) {
+            try {
+                int currentId = Integer.parseInt(record.getFinanceId());
+                if (currentId > lastId) {
+                    lastId = currentId;
+                }
+            } catch (NumberFormatException e) {
+                // Skip non-numeric IDs
+            }
+        }
+        return String.valueOf(lastId + 1);
+    }
+
+    public List<String> loadPoIds() {
+        List<String> poIds = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(PO_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length > 0) {
+                    String poId = data[0].trim();
+                    if (!poId.isEmpty()) {
+                        poIds.add(poId);
                     }
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error reading finance file: " + e.getMessage());
+            System.err.println("Error reading PO file: " + e.getMessage());
         }
-        return records;
+        return poIds;
     }
 
-    // Add a new finance record to the file
-    public static void addFinanceRecord(finance_c record) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FINANCE_FILE, true))) {
-            bw.write(record.toFileString());
-            bw.newLine();
-        } catch (IOException e) {
-            System.out.println("Error writing finance file: " + e.getMessage());
-        }
-    }
+    public static class FinanceRecord {
+        private String financeId;
+        private String poId;
+        private String approvalStatus;
+        private String paymentStatus;
+        private String paymentDate;
+        private String amount;
+        private int verifiedBy;
 
-    // Update an existing finance record in the file
-    public static void updateFinanceRecord(finance_c updatedRecord) {
-        File inputFile = new File(FINANCE_FILE);
-        StringBuilder updatedContent = new StringBuilder();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|");
-                if (parts.length > 0 && parts[0].equals(updatedRecord.getFinance_id())) {
-                    updatedContent.append(updatedRecord.toFileString()).append("\n");
-                } else {
-                    updatedContent.append(line).append("\n");
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Error reading finance file: " + e.getMessage());
-            return;
+        public FinanceRecord(String financeId, String poId, String approvalStatus, String paymentStatus, 
+                           String paymentDate, String amount, int verifiedBy) {
+            this.financeId = financeId;
+            this.poId = poId;
+            this.approvalStatus = approvalStatus;
+            this.paymentStatus = paymentStatus;
+            this.paymentDate = paymentDate;
+            this.amount = amount;
+            this.verifiedBy = verifiedBy;
         }
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
-            bw.write(updatedContent.toString().trim());
-        } catch (IOException e) {
-            System.out.println("Error updating finance file: " + e.getMessage());
-        }
-    }
+        // Getters and setters
+        public String getFinanceId() { return financeId; }
+        public String getPoId() { return poId; }
+        public String getApprovalStatus() { return approvalStatus; }
+        public String getPaymentStatus() { return paymentStatus; }
+        public String getPaymentDate() { return paymentDate; }
+        public String getAmount() { return amount; }
+        public int getVerifiedBy() { return verifiedBy; }
 
-    // Delete a finance record from the file by finance_id
-    public static void deleteFinanceRecord(String financeId) {
-        File inputFile = new File(FINANCE_FILE);
-        StringBuilder updatedContent = new StringBuilder();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (!line.startsWith(financeId + "|")) {
-                    updatedContent.append(line).append("\n");
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Error reading finance file: " + e.getMessage());
-            return;
-        }
-
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
-            bw.write(updatedContent.toString().trim());
-        } catch (IOException e) {
-            System.out.println("Error updating finance file: " + e.getMessage());
-        }
-    }
-
-    // Generate the next finance_id (for adding a new record)
-    public static String generateNextFinanceId() {
-        int lastId = 1000;
-        List<finance_c> records = loadFinanceRecords();
-        for (finance_c r : records) {
-            try {
-                int id = Integer.parseInt(r.getFinance_id());
-                if (id > lastId) {
-                    lastId = id;
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid finance_id format: " + r.getFinance_id());
-            }
-        }
-        return String.valueOf(lastId + 1);
+        public void setPoId(String poId) { this.poId = poId; }
+        public void setApprovalStatus(String approvalStatus) { this.approvalStatus = approvalStatus; }
+        public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+        public void setPaymentDate(String paymentDate) { this.paymentDate = paymentDate; }
+        public void setAmount(String amount) { this.amount = amount; }
+        public void setVerifiedBy(int verifiedBy) { this.verifiedBy = verifiedBy; }
     }
 }

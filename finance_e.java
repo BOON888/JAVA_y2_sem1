@@ -114,32 +114,6 @@ public class finance_e extends JPanel {
 
         JLabel amountLabel = new JLabel("Amount:");
         amountInfoField = new JTextField(15);
-        amountInfoField.setInputVerifier(new InputVerifier() {
-            @Override
-            public boolean verify(JComponent input) {
-                String text = ((JTextField) input).getText();
-                try {
-                    if (!text.isEmpty()) {
-                        Double.parseDouble(text);
-                    }
-                    return true;
-                } catch (NumberFormatException e) {
-                    return false;
-                }
-            }
-            
-            @Override
-            public boolean shouldYieldFocus(JComponent input) {
-                boolean valid = verify(input);
-                if (!valid) {
-                    JOptionPane.showMessageDialog(input, 
-                        "Please enter a valid amount (e.g., 123.45)", 
-                        "Invalid Amount", 
-                        JOptionPane.ERROR_MESSAGE);
-                }
-                return valid;
-            }
-        });
 
         addButton = new JButton("Add");
 
@@ -192,38 +166,32 @@ public class finance_e extends JPanel {
                     return;
                 }
 
-                try {
-                    double amount = Double.parseDouble(amountText);
-                    amount = Math.round(amount * 100.0) / 100.0;
-                    
-                    FinanceRecord newRecord = new FinanceRecord(
-                            financeId,
-                            poId,
-                            STATUS_PENDING,
-                            paymentStatus,
-                            paymentDate,
-                            amount,
-                            Integer.parseInt(login_c.currentUserId)
-                    );
-                    
-                    financeRecords.add(newRecord);
-                    saveFinanceData();
-                    populateFinanceListTableTop();
-                    
-                    financeIdInfoField.setText(generateNewFinanceId());
-                    poIdComboBox.setSelectedIndex(0);
-                    paymentStatusInfoCombo.setSelectedIndex(0);
-                    paymentDateInfoField.setText("");
-                    amountInfoField.setText("");
-                    
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        String.format("Finance record added successfully! Amount: %.2f", amount), 
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        "Invalid amount format. Please enter a valid number (e.g., 123.45)", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                FinanceRecord newRecord = new FinanceRecord(
+                        financeId,
+                        poId,
+                        STATUS_PENDING,
+                        paymentStatus,
+                        paymentDate,
+                        amountText,
+                        Integer.parseInt(login_c.currentUserId)
+                );
+                
+                financeRecords.add(newRecord);
+                saveFinanceData();
+                populateFinanceListTableTop();
+                
+                financeIdInfoField.setText(generateNewFinanceId());
+                poIdComboBox.setSelectedIndex(0);
+                paymentStatusInfoCombo.setSelectedIndex(0);
+                paymentDateInfoField.setText("");
+                amountInfoField.setText("");
+                
+                JOptionPane.showMessageDialog(finance_e.this, 
+                    "Finance record added successfully!\n" +
+                    "Finance ID: " + financeId + "\n" +
+                    "PO ID: " + poId + "\n" +
+                    "Amount: " + amountText, 
+                    "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -423,34 +391,32 @@ public class finance_e extends JPanel {
             while ((line = br.readLine()) != null) {
                 String[] data = line.split("\\|");
                 if (data.length == 7) {
-                    try {
-                        String financeId = data[0].trim();
-                        String poId = data[1].trim();
-                        String approvalStatus = data[2].trim();
-                        String paymentStatus = data[3].trim();
-                        String paymentDate = data[4].trim();
-                        double amount = Double.parseDouble(data[5].trim());
-                        int verifiedBy = Integer.parseInt(data[6].trim());
+                    String financeId = data[0].trim();
+                    String poId = data[1].trim();
+                    String approvalStatus = data[2].trim();
+                    String paymentStatus = data[3].trim();
+                    String paymentDate = data[4].trim();
+                    String amount = data[5].trim();
+                    int verifiedBy = Integer.parseInt(data[6].trim());
 
-                        FinanceRecord record = new FinanceRecord(
-                                financeId,
-                                poId,
-                                approvalStatus,
-                                paymentStatus,
-                                paymentDate,
-                                amount,
-                                verifiedBy
-                        );
-                        financeRecords.add(record);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Error parsing data in line (finance.txt): " + line);
-                    }
+                    FinanceRecord record = new FinanceRecord(
+                            financeId,
+                            poId,
+                            approvalStatus,
+                            paymentStatus,
+                            paymentDate,
+                            amount,
+                            verifiedBy
+                    );
+                    financeRecords.add(record);
                 } else {
                     System.err.println("Skipping invalid line in finance.txt: " + line + ". Expected 7 columns.");
                 }
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error reading finance file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (NumberFormatException e) {
+            System.err.println("Error parsing verifiedBy in finance.txt: " + e.getMessage());
         }
     }
 
@@ -462,7 +428,7 @@ public class finance_e extends JPanel {
                         + record.getApprovalStatus() + "|"
                         + record.getPaymentStatus() + "|"
                         + record.getPaymentDate() + "|"
-                        + String.format("%.2f", record.getAmount()) + "|"
+                        + record.getAmount() + "|"
                         + record.getVerifiedBy() + "\n");
             }
         } catch (IOException e) {
@@ -491,7 +457,7 @@ public class finance_e extends JPanel {
         approvalStatusUpdateCombo.setSelectedItem(record.getApprovalStatus());
         paymentStatusUpdateCombo.setSelectedItem(record.getPaymentStatus());
         paymentDateUpdateField.setText(record.getPaymentDate());
-        amountUpdateField.setText(String.format("%.2f", record.getAmount()));
+        amountUpdateField.setText(record.getAmount());
         verifiedByUpdateField.setText(String.valueOf(record.getVerifiedBy()));
     }
 
@@ -511,11 +477,11 @@ public class finance_e extends JPanel {
         private String approvalStatus;
         private String paymentStatus;
         private String paymentDate;
-        private double amount;
+        private String amount;
         private int verifiedBy;
 
         public FinanceRecord(String financeId, String poId, String approvalStatus, String paymentStatus, 
-                           String paymentDate, double amount, int verifiedBy) {
+                           String paymentDate, String amount, int verifiedBy) {
             this.financeId = financeId;
             this.poId = poId;
             this.approvalStatus = approvalStatus;
@@ -545,7 +511,7 @@ public class finance_e extends JPanel {
             return paymentDate;
         }
 
-        public double getAmount() {
+        public String getAmount() {
             return amount;
         }
 
@@ -569,7 +535,7 @@ public class finance_e extends JPanel {
             this.paymentDate = paymentDate;
         }
 
-        public void setAmount(double amount) {
+        public void setAmount(String amount) {
             this.amount = amount;
         }
 

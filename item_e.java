@@ -117,66 +117,66 @@ public class item_e extends JPanel {
     }
 
     private void selectSupplier() {
-        File file = new File(SUPPLIER_FILE);
+    File file = new File(SUPPLIER_FILE);
 
-        if (!file.exists()) {
-            JOptionPane.showMessageDialog(this,
-                    "Supplier file not found at: " + file.getAbsolutePath(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+    if (!file.exists()) {
+        JOptionPane.showMessageDialog(this,
+                "Supplier file not found at: " + file.getAbsolutePath(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+        List<String[]> suppliers = new ArrayList<>();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] data = line.split("\\|");
+            if (data.length >= 2) {
+                // Store only ID and Name for selection
+                suppliers.add(new String[]{data[0].trim(), data[1].trim()});
+            }
+        }
+
+        if (suppliers.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No suppliers found in file", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
-            List<String[]> suppliers = new ArrayList<>();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length >= 2) {
-                    suppliers.add(new String[]{data[0].trim(), data[1].trim()});
-                }
-            }
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Supplier", true);
+        dialog.setLayout(new BorderLayout());
 
-            if (suppliers.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No suppliers found in file", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Supplier", true);
-            dialog.setLayout(new BorderLayout());
-
-            String[] columnNames = {"ID", "Name"};
-            DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-            for (String[] supplier : suppliers) {
-                model.addRow(supplier);
-            }
-
-            JTable table = new JTable(model);
-            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-            JButton selectButton = new JButton("Select");
-            selectButton.addActionListener(e -> {
-                int row = table.getSelectedRow();
-                if (row >= 0) {
-                    supplierIdField.setText((String) model.getValueAt(row, 0));
-                    supplierNameField.setText((String) model.getValueAt(row, 1));
-                    dialog.dispose();
-                }
-            });
-
-            dialog.add(new JScrollPane(table), BorderLayout.CENTER);
-            dialog.add(selectButton, BorderLayout.SOUTH);
-            dialog.setSize(400, 300);
-            dialog.setLocationRelativeTo(this);
-            dialog.setVisible(true);
-
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this,
-                    "Error reading suppliers: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+        String[] columnNames = {"ID", "Name"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+        for (String[] supplier : suppliers) {
+            model.addRow(supplier);
         }
-    }
 
+        JTable table = new JTable(model);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JButton selectButton = new JButton("Select");
+        selectButton.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0) {
+                supplierIdField.setText((String) model.getValueAt(row, 0));
+                supplierNameField.setText((String) model.getValueAt(row, 1));
+                dialog.dispose();
+            }
+        });
+
+        dialog.add(new JScrollPane(table), BorderLayout.CENTER);
+        dialog.add(selectButton, BorderLayout.SOUTH);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(this,
+                "Error reading suppliers: " + e.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+    }
+}
     private JPanel createItemListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Item List"));
@@ -207,6 +207,26 @@ public class item_e extends JPanel {
         return panel;
     }
 
+    private String getSupplierName(String supplierId) {
+    File file = new File(SUPPLIER_FILE);
+    if (!file.exists()) {
+        return "Unknown Supplier";
+    }
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] data = line.split("\\|");
+            if (data.length >= 2 && data[0].trim().equals(supplierId)) {
+                return data[1].trim(); // Returns the supplier name (second field)
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    return "Unknown Supplier";
+}
+
     private void loadItems() {
         File file = new File(FILE_NAME);
         if(!file.exists()){
@@ -224,22 +244,22 @@ public class item_e extends JPanel {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                if (data.length == 7) {
+                if (data.length == 6) {
                     Item item = new Item(
                             data[0].trim(),
                             data[1].trim(),
                             data[2].trim(),
                             data[3].trim(),
-                            data[4].trim(),
-                            Double.parseDouble(data[5].trim()),
-                            Integer.parseInt(data[6].trim())
+                            Double.parseDouble(data[4].trim()),
+                            Integer.parseInt(data[5].trim())
                     );
                     items.add(item);
+                    String supplierName = getSupplierName(item.getSupplierId());
                     tableModel.addRow(new Object[]{
                             item.getId(),
                             item.getName(),
                             item.getSupplierId(),
-                            item.getSupplierName(),
+                            supplierName,
                             item.getCategory(),
                             String.format("%.2f", item.getPrice()),
                             item.getStockQuantity(),
@@ -275,8 +295,7 @@ public class item_e extends JPanel {
         String priceStr = priceField.getText();
         String stockStr = stockQuantityField.getText();
 
-        if (name.isEmpty() || supplierId.isEmpty() || supplierName.isEmpty() ||
-                category.isEmpty() || priceStr.isEmpty() || stockStr.isEmpty()) {
+        if (name.isEmpty() || supplierId.isEmpty() || category.isEmpty() || priceStr.isEmpty() || stockStr.isEmpty()) {
             JOptionPane.showMessageDialog(this, "All fields must be filled", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -286,7 +305,7 @@ public class item_e extends JPanel {
             int stock = Integer.parseInt(stockStr);
 
             String id = String.valueOf(nextId++);
-            Item newItem = new Item(id, name, supplierId, supplierName, category, price, stock);
+            Item newItem = new Item(id, name, supplierId, category, price, stock);
             items.add(newItem);
             tableModel.addRow(new Object[]{
                     id,
@@ -335,7 +354,7 @@ public class item_e extends JPanel {
         editDialog.add(editSupplierIdPanel);
 
         editDialog.add(new JLabel("Supplier Name:"));
-        JTextField editSupplierNameField = new JTextField(item.getSupplierName());
+        JTextField editSupplierNameField = new JTextField(getSupplierName(item.getSupplierId()));
         editSupplierNameField.setEditable(false);
         editDialog.add(editSupplierNameField);
 
@@ -361,15 +380,15 @@ public class item_e extends JPanel {
             try {
                 item.setName(editNameField.getText());
                 item.setSupplierId(editSupplierIdField.getText());
-                item.setSupplierName(editSupplierNameField.getText());
                 item.setCategory(editCategoryField.getText());
                 item.setPrice(Double.parseDouble(editPriceField.getText()));
                 item.setStockQuantity(Integer.parseInt(editStockField.getText()));
 
                 // Update table
+                String supplierName = getSupplierName(item.getSupplierId());
                 tableModel.setValueAt(item.getName(), row, 1);
                 tableModel.setValueAt(item.getSupplierId(), row, 2);
-                tableModel.setValueAt(item.getSupplierName(), row, 3);
+                tableModel.setValueAt(supplierName, row, 3);
                 tableModel.setValueAt(item.getCategory(), row, 4);
                 tableModel.setValueAt(String.format("%.2f", item.getPrice()), row, 5);
                 tableModel.setValueAt(item.getStockQuantity(), row, 6);
@@ -406,9 +425,10 @@ public class item_e extends JPanel {
 
     private void viewItem(int row) {
         Item item = items.get(row);
+        String supplierName = getSupplierName(item.getSupplierId());
         String message = String.format(
                 "ID: %s\nName: %s\nSupplier ID: %s\nSupplier Name: %s\nCategory: %s\nPrice: %.2f\nStock: %d",
-                item.getId(), item.getName(), item.getSupplierId(), item.getSupplierName(),
+                item.getId(), item.getName(), item.getSupplierId(), supplierName,
                 item.getCategory(), item.getPrice(), item.getStockQuantity());
 
         JOptionPane.showMessageDialog(this, message, "Item Details", JOptionPane.INFORMATION_MESSAGE);
@@ -486,84 +506,6 @@ public class item_e extends JPanel {
         public boolean stopCellEditing() {
             isPushed = false;
             return super.stopCellEditing();
-        }
-    }
-
-    // Item class
-    static class Item {
-        private String id;
-        private String name;
-        private String supplierId;
-        private String supplierName;
-        private String category;
-        private double price;
-        private int stockQuantity;
-
-        public Item(String id, String name, String supplierId, String supplierName, String category, double price, int stockQuantity) {
-            this.id = id;
-            this.name = name;
-            this.supplierId = supplierId;
-            this.supplierName = supplierName;
-            this.category = category;
-            this.price = price;
-            this.stockQuantity = stockQuantity;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getSupplierId() {
-            return supplierId;
-        }
-
-        public void setSupplierId(String supplierId) {
-            this.supplierId = supplierId;
-        }
-
-        public String getSupplierName() {
-            return supplierName;
-        }
-
-        public void setSupplierName(String supplierName) {
-            this.supplierName = supplierName;
-        }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public void setCategory(String category) {
-            this.category = category;
-        }
-
-        public double getPrice() {
-            return price;
-        }
-
-        public void setPrice(double price) {
-            this.price = price;
-        }
-
-        public int getStockQuantity() {
-            return stockQuantity;
-        }
-
-        public void setStockQuantity(int stockQuantity) {
-            this.stockQuantity = stockQuantity;
-        }
-
-        @Override
-        public String toString() {
-            return id + "|" + name + "|" + supplierId + "|" + supplierName + "|" + category + "|" + price + "|" + stockQuantity;
         }
     }
 }

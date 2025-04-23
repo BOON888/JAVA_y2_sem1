@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,22 +10,22 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
 public class item_v extends JPanel {
-    private static final String ITEM_FILE = "items.txt";
+    private static final String ITEM_FILE = "TXT/items.txt";
+    private static final String SUPPLIER_FILE = "TXT/suppliers.txt";
     private static final int MARGIN = 20;
     private static final Font GLOBAL_FONT = new Font("Arial", Font.PLAIN, 16);
     private static final Font HEADER_FONT = new Font("Arial", Font.BOLD, 18);
     private static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 25);
 
     private static class Item {
-        private String id, name, supplierId, supplierName, category;
+        private String id, name, supplierId, category;
         private double price;
         private int quantity;
 
-        public Item(String id, String name, String supplierId, String supplierName, String category, double price, int quantity) {
+        public Item(String id, String name, String supplierId, String category, double price, int quantity) {
             this.id = id;
             this.name = name;
             this.supplierId = supplierId;
-            this.supplierName = supplierName;
             this.category = category;
             this.price = price;
             this.quantity = quantity;
@@ -33,7 +34,6 @@ public class item_v extends JPanel {
         public String getId() { return id; }
         public String getName() { return name; }
         public String getSupplierId() { return supplierId; }
-        public String getSupplierName() { return supplierName; }
         public String getCategory() { return category; }
         public double getPrice() { return price; }
         public int getQuantity() { return quantity; }
@@ -54,10 +54,11 @@ public class item_v extends JPanel {
         Object[][] data = new Object[items.size()][7];
         for (int i = 0; i < items.size(); i++) {
             Item item = items.get(i);
+            String supplierName = getSupplierName(item.getSupplierId());
             data[i][0] = item.getId();
             data[i][1] = item.getName();
             data[i][2] = item.getSupplierId();
-            data[i][3] = item.getSupplierName();
+            data[i][3] = supplierName;
             data[i][4] = item.getCategory();
             data[i][5] = String.format("%.2f", item.getPrice());
             data[i][6] = item.getQuantity();
@@ -101,22 +102,41 @@ public class item_v extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    private String getSupplierName(String supplierId) {
+    File file = new File(SUPPLIER_FILE);
+    if (!file.exists()) {
+        return "Unknown Supplier";
+    }
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] data = line.split("\\|");
+            if (data.length >= 2 && data[0].trim().equals(supplierId)) {
+                return data[1].trim(); // Returns the supplier name (second field)
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    return "Unknown Supplier";
+}
+
     private ArrayList<Item> loadItems() {
         ArrayList<Item> items = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(ITEM_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] attributes = line.split("\\|");
-                if (attributes.length == 7) {
+                if (attributes.length == 6) {
                     try {
                         String id = attributes[0].trim();
                         String name = attributes[1].trim();
                         String supplierId = attributes[2].trim();
-                        String supplierName = attributes[3].trim();
-                        String category = attributes[4].trim();
-                        double price = Double.parseDouble(attributes[5].trim());
-                        int quantity = Integer.parseInt(attributes[6].trim());
-                        items.add(new Item(id, name, supplierId, supplierName, category, price, quantity));
+                        String category = attributes[3].trim();
+                        double price = Double.parseDouble(attributes[4].trim());
+                        int quantity = Integer.parseInt(attributes[5].trim());
+                        items.add(new Item(id, name, supplierId, category, price, quantity));
                     } catch (NumberFormatException e) {
                         System.err.println("Error parsing line: " + line);
                         e.printStackTrace();

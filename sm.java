@@ -21,7 +21,7 @@ public class sm extends JPanel {
 
         // ===== CONTENT PANEL (Switches Content in Center) =====
         contentPanel = new JPanel(new BorderLayout());
-        JLabel defaultLabel = new JLabel("WELCOME FINANCE MANAGER", SwingConstants.CENTER);
+        JLabel defaultLabel = new JLabel("WELCOME SAlES MANAGER", SwingConstants.CENTER);
         defaultLabel.setFont(new Font("Arial", Font.BOLD, 20));
         contentPanel.add(defaultLabel, BorderLayout.CENTER);
 

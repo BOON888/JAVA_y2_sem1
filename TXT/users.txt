@@ -1,7 +1,7 @@
 1001|DUN TZI|password|am|0165298626|duntzi@gmail.com
-1002|DUN TZI|password|fm|0165298626|duntzi@gmail.com
-1003|DUN TZI|password|pm|0165298626|duntzi@gmail.com
-1004|DUN TZI|password|im|0165298626|duntzi@gmail.com
-1005|DUN TZI|password|sm|0165298626|duntzi@gmail.com
-1006|DUN TZI|password1|im|0165298626|duntzi@gmail.com
+1002|LEE JUIN|password|fm|0165298626|duntzi@gmail.com
+1003|XIN ZE|password|pm|0165298626|duntzi@gmail.com
+1004|BOON|password|im|0165298626|duntzi@gmail.com
+1005|JUN HENG|password|sm|0165298626|duntzi@gmail.com
+1006|BOON|password1|im|0165298626|duntzi@gmail.com
 1007|duntzi|password|am|1234567890|123@gmail.com

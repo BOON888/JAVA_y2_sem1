@@ -4,7 +4,7 @@ user_id PK (Integer 4 digit)
 username (String)
 password (String)
 role (String) (Eg: Finance/Inventory/Sales/Purchase manager)
-conact_number (String)
+contact_number (String)
 email (String)
 
 items.txt:

@@ -4,7 +4,6 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 public class po_e_c {
-
     private static final String PO_FILE = "TXT/po.txt";
 
     // 读取所有采购订单数据
@@ -22,7 +21,7 @@ public class po_e_c {
             } catch (IOException | SecurityException ioe) {
                 JOptionPane.showMessageDialog(null, "Error creating PO file: " + ioe.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-            return fullPoData; // 返回空列表
+            return fullPoData;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -30,8 +29,7 @@ public class po_e_c {
             int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
-                if (line.trim().isEmpty())
-                    continue;
+                if (line.trim().isEmpty()) continue;
                 String[] data = line.split("\\|");
                 if (data.length >= 10) {
                     fullPoData.add(data);
@@ -41,37 +39,31 @@ public class po_e_c {
                 }
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Error loading purchase orders: " + e.getMessage(), "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Error loading purchase orders: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
         return fullPoData;
     }
 
-    // 添加采购订单到文件 (Order By is now automatically set by po_e)
+    // 添加采购订单
     public boolean addPurchaseOrder(String prID, String itemID, String supplierID, String quantityStr, String orderDate,
-            String orderBy, String receivedBy, String approvedBy) {
-        // 数据验证
+                                    String receivedBy, String approvedBy) {
         if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Please fill all required fields!", "Input Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Please fill all required fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
         int quantity;
         try {
             quantity = Integer.parseInt(quantityStr);
-            if (quantity <= 0)
-                throw new NumberFormatException();
+            if (quantity <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Quantity must be a positive number.", "Input Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Quantity must be a positive number.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
         if (!orderDate.matches("\\d{2}-\\d{2}-\\d{4}")) {
-            JOptionPane.showMessageDialog(null, "Order Date must be in DD-MM-YYYY format.", "Input Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Order Date must be in DD-MM-YYYY format.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -81,6 +73,9 @@ public class po_e_c {
             return false;
         }
         String formattedPOID = String.format("%04d", poID);
+
+        // 从 login_c 读取当前用户 ID
+        String orderBy = login_c.currentUserId != null ? login_c.currentUserId : "Unknown";
 
         String newPO = String.join("|", formattedPOID, prID, itemID, supplierID, String.valueOf(quantity), orderDate,
                 orderBy, receivedBy, approvedBy, "Pending");
@@ -92,8 +87,7 @@ public class po_e_c {
                     "Success", JOptionPane.INFORMATION_MESSAGE);
             return true;
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Error saving purchase order: " + e.getMessage(), "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Error saving purchase order: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
             return false;
         }

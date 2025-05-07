@@ -133,7 +133,7 @@ public class po_e extends JPanel {
             String receivedBy = mapRoleToID((String) receivedByDropdown.getSelectedItem());
             String approvedBy = mapRoleToID((String) approvedByDropdown.getSelectedItem());
 
-            if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, receivedBy, approvedBy)) {
+            if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, orderBy, receivedBy, approvedBy)) {
                 loadPurchaseOrders(); // 重新加载数据
                 tabbedPane.setSelectedIndex(1); // 切换到 PO List 选项卡
                 // 清空输入字段
@@ -539,4 +539,4 @@ public class po_e extends JPanel {
     public void setLoggedInUser(String username) {
         this.loggedInUser = username;
     }
-} 
+}

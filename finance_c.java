@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -13,8 +14,7 @@ public class finance_c {
     public static final String STATUS_NOT_VERIFIED = "Not Verified";
     public static final String STATUS_PAID = "Paid";
     public static final String STATUS_UNPAID = "Unpaid";
-    public static final int DEFAULT_VERIFIED_BY = 7001;
-
+    
     private List<FinanceRecord> financeRecords = new ArrayList<>();
 
     public finance_c() {
@@ -30,11 +30,38 @@ public class finance_c {
         saveFinanceData();
     }
 
-    public void updateFinanceRecord(FinanceRecord record) {
-        saveFinanceData();
+    public void updateFinanceRecord(FinanceRecord updatedRecord) {
+        for (int i = 0; i < financeRecords.size(); i++) {
+            if (financeRecords.get(i).getFinanceId().equals(updatedRecord.getFinanceId())) {
+                financeRecords.set(i, updatedRecord);
+                saveFinanceData();
+                break;
+            }
+        }
     }
 
-    public void loadFinanceData() {
+    public List<String> loadPoIds() {
+        List<String> poIds = new ArrayList<>();
+        poIds.add("");
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(PO_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length > 0) {
+                    String poId = data[0].trim();
+                    if (!poId.isEmpty()) {
+                        poIds.add(poId);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Error reading PO file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return poIds;
+    }
+
+    private void loadFinanceData() {
         financeRecords.clear();
         try (BufferedReader br = new BufferedReader(new FileReader(FINANCE_FILE))) {
             String line;
@@ -64,7 +91,7 @@ public class finance_c {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error reading finance file: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Error reading finance file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException e) {
             System.err.println("Error parsing verifiedBy in finance.txt: " + e.getMessage());
         }
@@ -82,7 +109,7 @@ public class finance_c {
                         + record.getVerifiedBy() + "\n");
             }
         } catch (IOException e) {
-            System.err.println("Error saving finance file: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Error saving finance file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -99,25 +126,6 @@ public class finance_c {
             }
         }
         return String.valueOf(lastId + 1);
-    }
-
-    public List<String> loadPoIds() {
-        List<String> poIds = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(PO_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split("\\|");
-                if (data.length > 0) {
-                    String poId = data[0].trim();
-                    if (!poId.isEmpty()) {
-                        poIds.add(poId);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error reading PO file: " + e.getMessage());
-        }
-        return poIds;
     }
 
     public static class FinanceRecord {

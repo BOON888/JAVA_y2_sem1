@@ -22,6 +22,7 @@ public class finance_e extends JPanel {
     private JTextField paymentDateInfoField;
     private JTextField amountInfoField;
     private JButton addButton;
+    private JLabel currentUserLabel;
 
     private DefaultTableModel financeListTableModelTop = new DefaultTableModel(new Object[]{"Finance ID", "Actions"}, 0) {
         @Override
@@ -77,6 +78,14 @@ public class finance_e extends JPanel {
         gbc.weightx = 1.0;
         gbc.weighty = 0.0;
 
+        currentUserLabel = new JLabel("Current User: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")");
+        currentUserLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        inputPanel.add(currentUserLabel, gbc);
+        gbc.gridwidth = 1;
+
         JLabel financeIdLabel = new JLabel("Finance ID:");
         financeIdInfoField = new JTextField(15);
         financeIdInfoField.setEditable(false);
@@ -84,7 +93,10 @@ public class finance_e extends JPanel {
 
         JLabel poIdLabel = new JLabel("PO ID:");
         poIdComboBox = new JComboBox<>();
-        loadPoIds();
+        List<String> poIds = financeController.loadPoIds();
+        for (String poId : poIds) {
+            poIdComboBox.addItem(poId);
+        }
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
         paymentStatusInfoCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID, finance_c.STATUS_UNPAID});
@@ -98,37 +110,37 @@ public class finance_e extends JPanel {
         addButton = new JButton("Add");
 
         gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         inputPanel.add(financeIdLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(financeIdInfoField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         inputPanel.add(poIdLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(poIdComboBox, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         inputPanel.add(paymentStatusLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(paymentStatusInfoCombo, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         inputPanel.add(paymentDateLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(paymentDateInfoField, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         inputPanel.add(amountLabel, gbc);
         gbc.gridx = 1;
         inputPanel.add(amountInfoField, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.anchor = GridBagConstraints.EAST;
         inputPanel.add(addButton, gbc);
 
@@ -153,7 +165,7 @@ public class finance_e extends JPanel {
                         paymentStatus,
                         paymentDate,
                         amountText,
-                        finance_c.DEFAULT_VERIFIED_BY
+                        Integer.parseInt(login_c.currentUserId)
                 );
                 
                 financeController.addFinanceRecord(newRecord);
@@ -169,23 +181,14 @@ public class finance_e extends JPanel {
                     "Finance record added successfully!\n" +
                     "Finance ID: " + financeId + "\n" +
                     "PO ID: " + poId + "\n" +
-                    "Amount: " + amountText, 
+                    "Amount: " + amountText + "\n" +
+                    "Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")", 
                     "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
         panel.add(inputPanel, BorderLayout.NORTH);
         return panel;
-    }
-
-    private void loadPoIds() {
-        poIdComboBox.removeAllItems();
-        poIdComboBox.addItem("");
-        
-        List<String> poIds = financeController.loadPoIds();
-        for (String poId : poIds) {
-            poIdComboBox.addItem(poId);
-        }
     }
 
     private JPanel createFinanceListPanel() {
@@ -315,11 +318,12 @@ public class finance_e extends JPanel {
                         if (confirm == JOptionPane.YES_OPTION) {
                             record.setApprovalStatus((String) approvalStatusUpdateCombo.getSelectedItem());
                             record.setPaymentStatus((String) paymentStatusUpdateCombo.getSelectedItem());
-                            record.setVerifiedBy(finance_c.DEFAULT_VERIFIED_BY);
+                            record.setVerifiedBy(Integer.parseInt(login_c.currentUserId));
                             
                             financeController.updateFinanceRecord(record);
+                            
                             JOptionPane.showMessageDialog(finance_e.this, 
-                                "Finance updated successfully! Verified By: " + finance_c.DEFAULT_VERIFIED_BY, 
+                                "Finance updated successfully! Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")", 
                                 "Success", JOptionPane.INFORMATION_MESSAGE);
                             clearUpdateFields();
                             populateFinanceListTableTop();
@@ -405,13 +409,10 @@ public class finance_e extends JPanel {
     private class ButtonRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            finance_c.FinanceRecord record = financeController.getFinanceRecords().get(row);
-            if (record != null) {
-                ButtonPanel panel = new ButtonPanel(record);
-                return panel;
-            } else {
-                return new JLabel();
+            if (value instanceof ButtonPanel) {
+                return (ButtonPanel) value;
             }
+            return new JLabel();
         }
     }
 
@@ -425,13 +426,11 @@ public class finance_e extends JPanel {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            finance_c.FinanceRecord record = financeController.getFinanceRecords().get(row);
-            if (record != null) {
-                panel = new ButtonPanel(record);
+            if (value instanceof ButtonPanel) {
+                panel = (ButtonPanel) value;
                 return panel;
-            } else {
-                return new JPanel();
             }
+            return new JPanel();
         }
 
         @Override
@@ -454,6 +453,12 @@ public class finance_e extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Finance Management");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            
+            // For testing, set some dummy user info
+            login_c.currentUserId = "7001";
+            login_c.currentUsername = "finance_user";
+            login_c.currentRole = "Finance";
+            
             frame.getContentPane().add(new finance_e());
             frame.pack();
             frame.setLocationRelativeTo(null);

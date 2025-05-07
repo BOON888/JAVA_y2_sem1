@@ -28,7 +28,7 @@ public class po_e extends JPanel {
     private JTextField prIDField, itemIDField, supplierIDField, quantityField, orderDateField;
     private JComboBox<String> receivedByDropdown, approvedByDropdown;
     private JButton addButton;
-    private String loggedInUser = "LoggedInUser"; // Placeholder for logged-in user
+    private String loggedInUser; // Store the logged-in user
     // ------------------------------------------------------------------
 
     // --- PO List Components (Unchanged - Order By Remains) ---
@@ -133,7 +133,7 @@ public class po_e extends JPanel {
             String receivedBy = mapRoleToID((String) receivedByDropdown.getSelectedItem());
             String approvedBy = mapRoleToID((String) approvedByDropdown.getSelectedItem());
 
-            if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, orderBy, receivedBy, approvedBy)) {
+            if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, receivedBy, approvedBy)) {
                 loadPurchaseOrders(); // 重新加载数据
                 tabbedPane.setSelectedIndex(1); // 切换到 PO List 选项卡
                 // 清空输入字段

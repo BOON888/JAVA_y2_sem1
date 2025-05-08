@@ -8,3 +8,8 @@
 1008|WEN XUAN|password|fm|0165298626|duntzi@gmail.com
 1009|JIE QI|password|fm|0165298626|duntzi@gmail.com
 1010|ALEX|password|im|0165298626|duntzi@gmail.com
+1011|A|password|am|0165298626|duntzi@gmail.com
+1012|A|password|pm|0165298626|duntzi@gmail.com
+1013|A|password|sm|0165298626|duntzi@gmail.com
+1014|A|password|fm|0165298626|duntzi@gmail.com
+1015|A|password|im|0165298626|duntzi@gmail.com

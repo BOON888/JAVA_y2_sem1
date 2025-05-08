@@ -2,7 +2,6 @@ import java.awt.*;
 import javax.swing.*;
 
 public class sm extends JPanel {
-
     private JPanel contentPanel;
     private JFrame mainFrame;
 
@@ -10,8 +9,8 @@ public class sm extends JPanel {
         this.mainFrame = frame;
         setLayout(new BorderLayout());
 
-        // ===== TOP PANEL (Always Visible Username) =====
-        String username = login_c.currentUsername; // This should be the logged-in user's username
+        // ===== TOP PANEL =====
+        String username = login_c.currentUsername;
         String userId = login_c.currentUserId;
         String role = login_c.currentRole;
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -19,23 +18,40 @@ public class sm extends JPanel {
         userLabel.setFont(new Font("Arial", Font.BOLD, 20));
         topPanel.add(userLabel);
 
-        // ===== CONTENT PANEL (Switches Content in Center) =====
+        // ===== CONTENT PANEL =====
         contentPanel = new JPanel(new BorderLayout());
-        JLabel defaultLabel = new JLabel("WELCOME SAlES MANAGER", SwingConstants.CENTER);
+        JLabel defaultLabel = new JLabel("WELCOME SALES MANAGER", SwingConstants.CENTER);
         defaultLabel.setFont(new Font("Arial", Font.BOLD, 20));
         contentPanel.add(defaultLabel, BorderLayout.CENTER);
 
         // ===== BOTTOM BUTTON PANEL =====
-        JPanel bottomPanel = new JPanel(new GridLayout(1, 7)); // 6 buttons + 1 Exit button
+        JPanel bottomPanel = new JPanel(new GridLayout(1, 7));
         String[] buttonNames = {"Supplier", "Item", "Sales", "PR", "PO List", "Inventory List"};
-        String[] classNames = {"supplier_e", "item_e", "sales_e", "pr_e", "po_v", "inventory_v"};
 
-        for (int i = 0; i < buttonNames.length; i++) {
-            JButton button = new JButton(buttonNames[i]);
-            final String className = classNames[i];
-            button.addActionListener(e -> switchContent(className));
-            bottomPanel.add(button);
-        }
+        // Add buttons with proper action listeners
+        JButton supplierButton = new JButton("Supplier");
+        supplierButton.addActionListener(e -> switchContent(new supplier_e()));
+        bottomPanel.add(supplierButton);
+
+        JButton itemButton = new JButton("Item");
+        itemButton.addActionListener(e -> switchContent(new item_e()));
+        bottomPanel.add(itemButton);
+
+        JButton salesButton = new JButton("Sales");
+        salesButton.addActionListener(e -> switchContent(new sales_e()));
+        bottomPanel.add(salesButton);
+
+        JButton prButton = new JButton("PR");
+        prButton.addActionListener(e -> switchContent(new pr_e()));
+        bottomPanel.add(prButton);
+
+        JButton poButton = new JButton("PO List");
+        poButton.addActionListener(e -> switchContent(new po_v()));
+        bottomPanel.add(poButton);
+
+        JButton inventoryButton = new JButton("Inventory List");
+        inventoryButton.addActionListener(e -> switchContent(new inventory_v()));
+        bottomPanel.add(inventoryButton);
 
         JButton exitButton = new JButton("Exit");
         exitButton.addActionListener(e -> exitToLogin());
@@ -47,29 +63,11 @@ public class sm extends JPanel {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void switchContent(String className) {
-        try {
-            contentPanel.removeAll();
-
-            // Special handling for item_e
-            if ("item_e".equals(className)) {
-                contentPanel.add(new item_e(), BorderLayout.CENTER);
-            }
-            // Add other special cases if needed
-            else {
-                Class<?> clazz = Class.forName(className);
-                JPanel panel = (JPanel) clazz.getDeclaredConstructor().newInstance();
-                contentPanel.add(panel, BorderLayout.CENTER);
-            }
-
-            contentPanel.revalidate();
-            contentPanel.repaint();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(null,
-                    "Error opening " + className + ": " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    private void switchContent(JPanel panel) {
+        contentPanel.removeAll();
+        contentPanel.add(panel, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void exitToLogin() {

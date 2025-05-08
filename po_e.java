@@ -12,7 +12,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -116,7 +115,7 @@ public class po_e extends JPanel {
         }
 
         receivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
-    approvedByDropdown = new JComboBox<>(getUsersByRole("fm").toArray(new String[0]));
+        approvedByDropdown = new JComboBox<>(getUsersByRole("fm").toArray(new String[0]));
 
 
         JComboBox<?>[] combos = {receivedByDropdown, approvedByDropdown};

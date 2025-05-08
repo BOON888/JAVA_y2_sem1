@@ -47,7 +47,7 @@ public class po_e_c {
 
     // 添加采购订单
     public boolean addPurchaseOrder(String prID, String itemID, String supplierID, String quantityStr, String orderDate,
-                                    String receivedBy, String approvedBy) {
+                                     String receivedBy, String approvedBy) {
         if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Please fill all required fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
             return false;
@@ -116,7 +116,7 @@ public class po_e_c {
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty())
@@ -154,7 +154,7 @@ public class po_e_c {
             }
             if (!tempFile.renameTo(inputFile)) {
                 try (InputStream in = new FileInputStream(tempFile);
-                        OutputStream out = new FileOutputStream(inputFile)) {
+                     OutputStream out = new FileOutputStream(inputFile)) {
                     byte[] buf = new byte[8192];
                     int len;
                     while ((len = in.read(buf)) > 0)
@@ -225,7 +225,7 @@ public class po_e_c {
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-                BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty())
@@ -277,7 +277,7 @@ public class po_e_c {
                 }
                 if (!tempFile.renameTo(inputFile)) {
                     try (InputStream in = new FileInputStream(tempFile);
-                            OutputStream out = new FileOutputStream(inputFile)) {
+                         OutputStream out = new FileOutputStream(inputFile)) {
                         byte[] buf = new byte[8192];
                         int len;
                         while ((len = in.read(buf)) > 0)

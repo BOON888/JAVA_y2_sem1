@@ -16,8 +16,6 @@ import java.util.regex.Pattern;
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 
 public class po_e extends JPanel {
     private static final String PO_FILE = "TXT/po.txt";
@@ -30,6 +28,26 @@ public class po_e extends JPanel {
     private JButton addButton;
     private String loggedInUser; // Store the logged-in user
     // ------------------------------------------------------------------
+    
+    private static List<String> getUsersByRole(String role) {
+        List<String> userList = new ArrayList<>();
+        File file = new File("TXT/users.txt");
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 4 && parts[3].equalsIgnoreCase(role)) {
+                    String userEntry = parts[0] + " - " + parts[1]; // user_id - username
+                    userList.add(userEntry);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return userList;
+    }
 
     // --- PO List Components (Unchanged - Order By Remains) ---
     private JTable poTable;
@@ -97,8 +115,9 @@ public class po_e extends JPanel {
             panel.add(fields[i], gbc);
         }
 
-        receivedByDropdown = new JComboBox<>(new String[]{"Inventory Manager"});
-        approvedByDropdown = new JComboBox<>(new String[]{"Financial Manager"});
+        receivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
+    approvedByDropdown = new JComboBox<>(getUsersByRole("fm").toArray(new String[0]));
+
 
         JComboBox<?>[] combos = {receivedByDropdown, approvedByDropdown};
 

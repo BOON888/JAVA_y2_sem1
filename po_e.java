@@ -249,8 +249,8 @@ public class po_e extends JPanel {
         editQuantityField = createDetailTextField();
         editOrderDateField = createDetailTextField();
         editOrderByDropdown = new JComboBox<>(new String[]{"Purchase Manager", "Administrator"});
-        editReceivedByDropdown = new JComboBox<>(new String[]{"Inventory Manager"});
-        editApprovedByDropdown = new JComboBox<>(new String[]{"Financial Manager"});
+        editReceivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
+        editApprovedByDropdown = new JComboBox<>(getUsersByRole("fm").toArray(new String[0]));
         editStatusDropdown = new JComboBox<>(new String[]{"Pending", "Approved", "Rejected"});
 
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
@@ -260,7 +260,6 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 3, "Supplier ID:", editSupplierIdField);
         addDetailRow(detailsPanel, gbc, 4, "Quantity:", editQuantityField);
         addDetailRow(detailsPanel, gbc, 5, "Order Date:", editOrderDateField);
-        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByDropdown);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
         addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusDropdown);
@@ -424,13 +423,13 @@ public class po_e extends JPanel {
         }
     }
 
-    private String mapRoleToID(String role) {
-        switch (role) {
-            case "Inventory Manager": return "IM";
-            case "Financial Manager": return "FM";
-            default: return "";
+    private String mapRoleToID(String selectedItem) {
+        if (selectedItem != null && selectedItem.contains(" - ")) {
+            return selectedItem.split(" - ")[0]; // Extract user_id part
         }
+        return "Unknown"; // Default if something goes wrong
     }
+    
 
     private String mapIDToRole(String id) {
         switch (id) {

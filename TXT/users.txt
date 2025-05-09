@@ -12,4 +12,5 @@
 1012|A|password|pm|0165298626|duntzi@gmail.com
 1013|A|password|sm|0165298626|duntzi@gmail.com
 1014|A|password|fm|0165298626|duntzi@gmail.com
-1015|A|password|im|0165298626|duntzi@gmail.com
+1015|A|password|im|0165298626|duntzi@gmail.
+1016|BABI|password|im|0165298626|duntzi@gmail.com

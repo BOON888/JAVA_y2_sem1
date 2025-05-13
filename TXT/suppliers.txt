@@ -1,3 +1,2 @@
-3002|tgrgtrer|gregrg|gergreg|gergreg|regregr
-3004|fedf|fewgh42h4|ggggdfgdfg|vgfvfd|fvdvd
-3005|Cheah Jun Heng|01111258191|zhcheah12345@gmail.com|jalan babi|milk
+3001|uncle A|1234567890|uncleA@gmail.com|uncle A address|uncle A item 1
+3002|uncle B|1234567890|uncleB@gmail.com|uncle B address|uncle B item 1

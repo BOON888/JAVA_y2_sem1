@@ -1,2 +1,4 @@
-2000|milk|3005|food|5.0|106
-2001|banana|3004|fruit|3.0|18
+2001|uncle A item 2|3001|category A|10.0|90
+2002|uncle B item 2|3002|category B|20.0|200
+2003|uncle A item 3|3001|category A|30.0|100
+2004|uncle B item 3|3002|category B|40.0|200

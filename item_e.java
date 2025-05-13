@@ -1,12 +1,14 @@
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
+
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 
 public class item_e extends JPanel {
+
     private JTextField nameField, supplierIdField, supplierNameField, categoryField, priceField, stockQuantityField;
     private JTable itemTable;
     private DefaultTableModel tableModel;
@@ -52,7 +54,7 @@ public class item_e extends JPanel {
     }
 
     private void findNextId() {
-        nextId = 2000;
+        nextId = 2001;
         for (Item item : items) {
             try {
                 int currentId = Integer.parseInt(item.getId());
@@ -117,66 +119,67 @@ public class item_e extends JPanel {
     }
 
     private void selectSupplier() {
-    File file = new File(SUPPLIER_FILE);
+        File file = new File(SUPPLIER_FILE);
 
-    if (!file.exists()) {
-        JOptionPane.showMessageDialog(this,
-                "Supplier file not found at: " + file.getAbsolutePath(),
-                "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
-        List<String[]> suppliers = new ArrayList<>();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] data = line.split("\\|");
-            if (data.length >= 2) {
-                // Store only ID and Name for selection
-                suppliers.add(new String[]{data[0].trim(), data[1].trim()});
-            }
-        }
-
-        if (suppliers.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No suppliers found in file", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!file.exists()) {
+            JOptionPane.showMessageDialog(this,
+                    "Supplier file not found at: " + file.getAbsolutePath(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Supplier", true);
-        dialog.setLayout(new BorderLayout());
-
-        String[] columnNames = {"ID", "Name"};
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-        for (String[] supplier : suppliers) {
-            model.addRow(supplier);
-        }
-
-        JTable table = new JTable(model);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        JButton selectButton = new JButton("Select");
-        selectButton.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) {
-                supplierIdField.setText((String) model.getValueAt(row, 0));
-                supplierNameField.setText((String) model.getValueAt(row, 1));
-                dialog.dispose();
+        try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+            List<String[]> suppliers = new ArrayList<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length >= 2) {
+                    // Store only ID and Name for selection
+                    suppliers.add(new String[]{data[0].trim(), data[1].trim()});
+                }
             }
-        });
 
-        dialog.add(new JScrollPane(table), BorderLayout.CENTER);
-        dialog.add(selectButton, BorderLayout.SOUTH);
-        dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
+            if (suppliers.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No suppliers found in file", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-    } catch (IOException e) {
-        JOptionPane.showMessageDialog(this,
-                "Error reading suppliers: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
+            JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Select Supplier", true);
+            dialog.setLayout(new BorderLayout());
+
+            String[] columnNames = {"ID", "Name"};
+            DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+            for (String[] supplier : suppliers) {
+                model.addRow(supplier);
+            }
+
+            JTable table = new JTable(model);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+            JButton selectButton = new JButton("Select");
+            selectButton.addActionListener(e -> {
+                int row = table.getSelectedRow();
+                if (row >= 0) {
+                    supplierIdField.setText((String) model.getValueAt(row, 0));
+                    supplierNameField.setText((String) model.getValueAt(row, 1));
+                    dialog.dispose();
+                }
+            });
+
+            dialog.add(new JScrollPane(table), BorderLayout.CENTER);
+            dialog.add(selectButton, BorderLayout.SOUTH);
+            dialog.setSize(400, 300);
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error reading suppliers: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
-}
+
     private JPanel createItemListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Item List"));
@@ -208,28 +211,28 @@ public class item_e extends JPanel {
     }
 
     private String getSupplierName(String supplierId) {
-    File file = new File(SUPPLIER_FILE);
-    if (!file.exists()) {
+        File file = new File(SUPPLIER_FILE);
+        if (!file.exists()) {
+            return "Unknown Supplier";
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length >= 2 && data[0].trim().equals(supplierId)) {
+                    return data[1].trim(); // Returns the supplier name (second field)
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return "Unknown Supplier";
     }
 
-    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] data = line.split("\\|");
-            if (data.length >= 2 && data[0].trim().equals(supplierId)) {
-                return data[1].trim(); // Returns the supplier name (second field)
-            }
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-    return "Unknown Supplier";
-}
-
     private void loadItems() {
         File file = new File(FILE_NAME);
-        if(!file.exists()){
+        if (!file.exists()) {
             try {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
@@ -256,14 +259,14 @@ public class item_e extends JPanel {
                     items.add(item);
                     String supplierName = getSupplierName(item.getSupplierId());
                     tableModel.addRow(new Object[]{
-                            item.getId(),
-                            item.getName(),
-                            item.getSupplierId(),
-                            supplierName,
-                            item.getCategory(),
-                            String.format("%.2f", item.getPrice()),
-                            item.getStockQuantity(),
-                            "View/Edit/Delete"
+                        item.getId(),
+                        item.getName(),
+                        item.getSupplierId(),
+                        supplierName,
+                        item.getCategory(),
+                        String.format("%.2f", item.getPrice()),
+                        item.getStockQuantity(),
+                        "View/Edit/Delete"
                     });
                 }
             }
@@ -308,14 +311,14 @@ public class item_e extends JPanel {
             Item newItem = new Item(id, name, supplierId, category, price, stock);
             items.add(newItem);
             tableModel.addRow(new Object[]{
-                    id,
-                    name,
-                    supplierId,
-                    supplierName,
-                    category,
-                    String.format("%.2f", price),
-                    stock,
-                    "View/Edit/Delete"
+                id,
+                name,
+                supplierId,
+                supplierName,
+                category,
+                String.format("%.2f", price),
+                stock,
+                "View/Edit/Delete"
             });
             saveItems();
             clearInputFields();
@@ -445,6 +448,7 @@ public class item_e extends JPanel {
 
     // Table button renderer and editor
     class TableButtonRenderer extends JButton implements TableCellRenderer {
+
         public TableButtonRenderer() {
             setOpaque(true);
         }
@@ -458,6 +462,7 @@ public class item_e extends JPanel {
     }
 
     class TableButtonEditor extends DefaultCellEditor {
+
         private JButton button;
         private String label;
         private boolean isPushed;
@@ -491,12 +496,13 @@ public class item_e extends JPanel {
                         new String[]{"View", "Edit", "Delete", "Cancel"},
                         "Cancel");
 
-                if (option == 0)
-                    viewItem(itemTable.getEditingRow());
-                else if (option == 1)
-                    editItem(itemTable.getEditingRow());
-                else if (option == 2)
+                if (option == 0) {
+                    viewItem(itemTable.getEditingRow()); 
+                }else if (option == 1) {
+                    editItem(itemTable.getEditingRow()); 
+                }else if (option == 2) {
                     deleteItem(itemTable.getEditingRow());
+                }
             }
             isPushed = false;
             return label;

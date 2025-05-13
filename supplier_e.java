@@ -1,15 +1,16 @@
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.io.*;
-import java.util.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class supplier_e extends JPanel {
+
     private JTextField nameField, contactField, emailField, addressField, itemField;
     private JTable supplierTable;
     private DefaultTableModel tableModel;
     private static final String FILE_NAME = "TXT/suppliers.txt"; // Your folder path
-    private int currentId = 3000;
+    private int currentId = 3001;
 
     public supplier_e() {
         setLayout(new BorderLayout());
@@ -40,11 +41,16 @@ public class supplier_e extends JPanel {
         addressField = new JTextField(15);
         itemField = new JTextField(15);
 
-        inputPanel.add(new JLabel("Name:")); inputPanel.add(nameField);
-        inputPanel.add(new JLabel("Contact No.:")); inputPanel.add(contactField);
-        inputPanel.add(new JLabel("Email:")); inputPanel.add(emailField);
-        inputPanel.add(new JLabel("Address:")); inputPanel.add(addressField);
-        inputPanel.add(new JLabel("Item Name:")); inputPanel.add(itemField);
+        inputPanel.add(new JLabel("Name:"));
+        inputPanel.add(nameField);
+        inputPanel.add(new JLabel("Contact No.:"));
+        inputPanel.add(contactField);
+        inputPanel.add(new JLabel("Email:"));
+        inputPanel.add(emailField);
+        inputPanel.add(new JLabel("Address:"));
+        inputPanel.add(addressField);
+        inputPanel.add(new JLabel("Item Name:"));
+        inputPanel.add(itemField);
 
         JButton addButton = new JButton("Add");
         addButton.addActionListener(e -> addSupplier());
@@ -140,12 +146,12 @@ public class supplier_e extends JPanel {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 writer.println(
-                        tableModel.getValueAt(i, 0) + "|" +
-                        tableModel.getValueAt(i, 1) + "|" +
-                        tableModel.getValueAt(i, 2) + "|" +
-                        tableModel.getValueAt(i, 3) + "|" +
-                        tableModel.getValueAt(i, 4) + "|" +
-                        tableModel.getValueAt(i, 5));
+                        tableModel.getValueAt(i, 0) + "|"
+                        + tableModel.getValueAt(i, 1) + "|"
+                        + tableModel.getValueAt(i, 2) + "|"
+                        + tableModel.getValueAt(i, 3) + "|"
+                        + tableModel.getValueAt(i, 4) + "|"
+                        + tableModel.getValueAt(i, 5));
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving suppliers: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -154,7 +160,9 @@ public class supplier_e extends JPanel {
 
     private void loadSuppliers() {
         File file = new File(FILE_NAME);
-        if (!file.exists()) return;
+        if (!file.exists()) {
+            return;
+        }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
             String line;

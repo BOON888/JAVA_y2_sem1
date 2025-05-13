@@ -1,16 +1,18 @@
+
+import java.awt.*;
+import java.io.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
-import java.awt.*;
-import java.io.*;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 public class sales_e extends JPanel {
+
     private JTextField itemNameField, quantityField;
     private JComboBox<String> salesPersonCombo;
     private JTable salesTable;
@@ -63,7 +65,7 @@ public class sales_e extends JPanel {
     }
 
     private void findNextSalesId() {
-        nextSalesId = 4000;
+        nextSalesId = 4001;
         for (Sales sale : salesList) {
             try {
                 int currentId = Integer.parseInt(sale.getSalesId());
@@ -206,7 +208,7 @@ public class sales_e extends JPanel {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
-                if (data.length >= 4 && "sm".equalsIgnoreCase(data[3])) {
+                if (data.length >= 4 && ("sm".equalsIgnoreCase(data[3]) || "am".equalsIgnoreCase(data[3]))) {
                     salesPersons.add(data[1]); // Add sales manager name
                 }
             }
@@ -237,12 +239,12 @@ public class sales_e extends JPanel {
                 String[] data = line.split("\\|");
                 if (data.length >= 6) {
                     Sales sale = new Sales(
-                        data[0],
-                        data[1],
-                        LocalDate.parse(data[2]),
-                        Integer.parseInt(data[3]),
-                        Integer.parseInt(data[4]),
-                        data[5]
+                            data[0],
+                            data[1],
+                            LocalDate.parse(data[2]),
+                            Integer.parseInt(data[3]),
+                            Integer.parseInt(data[4]),
+                            data[5]
                     );
                     salesList.add(sale);
 
@@ -330,12 +332,12 @@ public class sales_e extends JPanel {
 
             // Create new sale
             Sales newSale = new Sales(
-                String.valueOf(nextSalesId++),
-                itemId,
-                LocalDate.now(),
-                quantitySold,
-                remainingStock,
-                salesPerson
+                    String.valueOf(nextSalesId++),
+                    itemId,
+                    LocalDate.now(),
+                    quantitySold,
+                    remainingStock,
+                    salesPerson
             );
 
             // Update data
@@ -402,6 +404,7 @@ public class sales_e extends JPanel {
 
     // Helper classes for table buttons and input validation
     private static class ButtonRenderer extends JButton implements TableCellRenderer {
+
         public ButtonRenderer() {
             setOpaque(true);
         }
@@ -415,6 +418,7 @@ public class sales_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
+
         private JButton button;
 
         public ButtonEditor(JCheckBox checkBox) {
@@ -434,12 +438,15 @@ public class sales_e extends JPanel {
         @Override
         public Object getCellEditorValue() {
             int option = JOptionPane.showOptionDialog(sales_e.this,
-                "Choose action", "Sales Action",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
-                null, new String[]{"View", "Delete", "Cancel"}, "Cancel");
+                    "Choose action", "Sales Action",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+                    null, new String[]{"View", "Delete", "Cancel"}, "Cancel");
 
-            if (option == 0) viewSale(salesTable.getEditingRow());
-            else if (option == 1) deleteSale(salesTable.getEditingRow());
+            if (option == 0) {
+                viewSale(salesTable.getEditingRow());
+            } else if (option == 1) {
+                deleteSale(salesTable.getEditingRow());
+            }
 
             return "View/Delete";
         }
@@ -448,18 +455,18 @@ public class sales_e extends JPanel {
     private void viewSale(int row) {
         Sales sale = salesList.get(row);
         JOptionPane.showMessageDialog(this,
-            "Sales ID: " + sale.getSalesId() + "\n" +
-            "Item ID: " + sale.getItemId() + "\n" +
-            "Date: " + sale.getSalesDate() + "\n" +
-            "Quantity Sold: " + sale.getQuantitySold() + "\n" +
-            "Remaining Stock: " + sale.getRemainingStock() + "\n" +
-            "Sales Person: " + sale.getSalesPerson(),
-            "Sale Details", JOptionPane.INFORMATION_MESSAGE);
+                "Sales ID: " + sale.getSalesId() + "\n"
+                + "Item ID: " + sale.getItemId() + "\n"
+                + "Date: " + sale.getSalesDate() + "\n"
+                + "Quantity Sold: " + sale.getQuantitySold() + "\n"
+                + "Remaining Stock: " + sale.getRemainingStock() + "\n"
+                + "Sales Person: " + sale.getSalesPerson(),
+                "Sale Details", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void deleteSale(int row) {
         int confirm = JOptionPane.showConfirmDialog(this,
-            "Delete this sale?", "Confirm", JOptionPane.YES_NO_OPTION);
+                "Delete this sale?", "Confirm", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
             Sales sale = salesList.get(row);
@@ -477,9 +484,12 @@ public class sales_e extends JPanel {
 
     // Document filter for numeric input only
     private static class IntegerDocument extends PlainDocument {
+
         @Override
         public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
-            if (str == null) return;
+            if (str == null) {
+                return;
+            }
 
             for (int i = 0; i < str.length(); i++) {
                 if (!Character.isDigit(str.charAt(i))) {

@@ -3,3 +3,5 @@
 1003|boon|password|im|1234567890|boon@gmail.com
 1004|lee juin|password|fm|1234567890|leejuin@gmail.com
 1005|eden|password|pm|1234567890|eden@gmail.com
+1006|aden|password|im|1234567890|eden@gmail.com
+1007|bden|password|am|1234567890|eden@gmail.com

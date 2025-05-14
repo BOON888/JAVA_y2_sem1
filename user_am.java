@@ -86,6 +86,11 @@ public class user_am extends JPanel {
         userDetailsTable = new JTable(detailsTableModel);
         userDetailsTable.setRowHeight(30);
         JScrollPane detailsScrollPane = new JScrollPane(userDetailsTable);
+        // Set combo box editor for the Role column in details table
+        String[] roles = {"am", "sm", "fm", "im", "pm"};
+        JComboBox<String> roleComboBoxEditor = new JComboBox<>(roles);
+        userDetailsTable.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(roleComboBoxEditor));
+
         detailsScrollPane.setBorder(new EmptyBorder(10, 20, 10, 20));
 
         // Search bar
@@ -217,8 +222,12 @@ public class user_am extends JPanel {
         }
 
         user_c newUser = new user_c(userId, username, password, role, contact, email);
-        UserController.addUser(newUser);
-        JOptionPane.showMessageDialog(this, "User added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        if (UserController.isValidUser(newUser)) {
+            UserController.addUser(newUser);
+            JOptionPane.showMessageDialog(null, "User added successfully!");
+        } else {
+            // validation already shows error message inside isValidUser()
+        }
         resetUserInfoForm();
         loadUserData();
     }
@@ -249,9 +258,12 @@ public class user_am extends JPanel {
         // For simplicity, we keep the original password here.
         // In a real application, you might prompt for a new password.
         user_c updatedUser = new user_c(userId, updatedUsername, "password", updatedRole, updatedContact, updatedEmail);
-        UserController.updateUser(updatedUser);
-        JOptionPane.showMessageDialog(this, "User data updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-        loadUserData();
+        if (UserController.isValidUser(updatedUser)) {
+            UserController.updateUser(updatedUser);
+            JOptionPane.showMessageDialog(null, "User updated successfully!");
+        } else {
+            // Do not show success message
+        }
     }
 
     // Display user details when "View" is clicked (populating the details table)

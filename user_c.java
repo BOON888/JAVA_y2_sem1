@@ -2,6 +2,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JOptionPane;
 
 // Data model representing a user
 public class user_c {
@@ -102,6 +103,9 @@ class UserController {
 
     // Add a new user to the file
     public static void addUser(user_c user) {
+        if (!isValidUser(user)) {
+            return; // ✅ Add this line
+        }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(USER_FILE, true))) {
             bw.write(user.toFileString());
             bw.newLine();
@@ -112,6 +116,9 @@ class UserController {
 
     // Update an existing user in the file
     public static void updateUser(user_c updatedUser) {
+        if (!isValidUser(updatedUser)) {
+            return; // ✅ Add this line
+        }
         File inputFile = new File(USER_FILE);
         StringBuilder updatedContent = new StringBuilder();
 
@@ -132,6 +139,7 @@ class UserController {
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
             bw.write(updatedContent.toString().trim());
+            bw.newLine();
         } catch (IOException e) {
             System.out.println("Error updating user file: " + e.getMessage());
         }
@@ -156,9 +164,41 @@ class UserController {
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(inputFile))) {
             bw.write(updatedContent.toString().trim());
+            bw.newLine();
         } catch (IOException e) {
             System.out.println("Error updating user file: " + e.getMessage());
         }
+    }
+
+    public static boolean isValidUser(user_c user) {
+        if (!user.getContact().matches("\\d{10,11}")) {
+            JOptionPane.showMessageDialog(null, "Invalid contact number. It must be 10–11 digits.");
+            return false;
+        }
+
+        if (!user.getEmail().endsWith("@gmail.com")) {
+            JOptionPane.showMessageDialog(null, "Invalid email. It must end with @gmail.com");
+            return false;
+        }
+
+        String password = user.getPassword();
+        int digitCount = 0;
+        int letterCount = 0;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isDigit(c)) {
+                digitCount++;
+            } else if (Character.isLetter(c)) {
+                letterCount++;
+            }
+        }
+
+        if (password.length() < 8 || digitCount < 6 || letterCount < 2) {
+            JOptionPane.showMessageDialog(null, "Invalid password. Must be at least 8 characters with 6 digits and 2 letters.");
+            return false;
+        }
+
+        return true;
     }
 
     // Generate the next user ID (for adding a new user)

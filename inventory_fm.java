@@ -238,27 +238,20 @@ public class inventory_fm extends JPanel {
                                 
                                 // If status is changing to Verified from another status
                                 if (selectedStatus.equals("Verified") && !previousStatus.equals("Verified")) {
-                                    // Add received quantity to stock level
-                                    int newStockLevel = record.getStockLevel() + record.getReceivedQuantity();
-                                    record.setStockLevel(newStockLevel);
-                                    // Reset received quantity to 0
-                                    record.setReceivedQuantity(0);
+                                    // Update the stock level in items.txt
+                                    updateItemStockLevel(record.getItemId(), record.getReceivedQuantity());
                                 }
                                 
-                                // Update the status
+                                // Update the status in inventory record
                                 record.setStatus(selectedStatus);
                                 
                                 populateInventoryTableTop();
                                 saveInventoryData();
                                 
-                                // Update the fields to show the changes
-                                stockLevelUpdateField.setText(String.valueOf(record.getStockLevel()));
-                                receivedQuantityUpdateField.setText(String.valueOf(record.getReceivedQuantity()));
-                                
                                 JOptionPane.showMessageDialog(inventory_fm.this, 
                                     "Inventory status updated successfully!" + 
                                     (selectedStatus.equals("Verified") && !previousStatus.equals("Verified") ? 
-                                    "\nStock level updated." : ""), 
+                                    "\nItem stock level updated in items.txt." : ""), 
                                     "Success", JOptionPane.INFORMATION_MESSAGE);
                                 
                             } catch (NumberFormatException ex) {
@@ -268,7 +261,9 @@ public class inventory_fm extends JPanel {
                                 return;
                             }
                         } else {
-                            JOptionPane.showMessageDialog(inventory_fm.this, "Inventory status update cancelled.", "Cancelled", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(inventory_fm.this, 
+                                "Inventory status update cancelled.", 
+                                "Cancelled", JOptionPane.INFORMATION_MESSAGE);
                         }
                         break;
                     }
@@ -276,12 +271,55 @@ public class inventory_fm extends JPanel {
                 
                 clearUpdateFields();
                 if (!found) {
-                    JOptionPane.showMessageDialog(inventory_fm.this, "Could not find Inventory record.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(inventory_fm.this, 
+                        "Could not find Inventory record.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
         return bottomPanel;
+    }
+
+    private void updateItemStockLevel(String itemId, int quantityToAdd) {
+        List<String> lines = new ArrayList<>();
+        boolean found = false;
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(ITEMS_FILE))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length == 6 && data[0].trim().equals(itemId)) {
+                    found = true;
+                    try {
+                        int currentStock = Integer.parseInt(data[5].trim());
+                        int newStock = currentStock + quantityToAdd;
+                        line = data[0] + "|" + data[1] + "|" + data[2] + "|" + data[3] + "|" + data[4] + "|" + newStock;
+                    } catch (NumberFormatException e) {
+                        System.err.println("Error parsing stock quantity for item " + itemId);
+                    }
+                }
+                lines.add(line);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error reading items file: " + e.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        if (found) {
+            try (FileWriter writer = new FileWriter(ITEMS_FILE)) {
+                for (String line : lines) {
+                    writer.write(line + "\n");
+                }
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Error saving items file: " + e.getMessage(), 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Item ID " + itemId + " not found in items file", 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void populateInventoryTableTop() {
@@ -441,8 +479,6 @@ public class inventory_fm extends JPanel {
         public String getStatus() { return status; }
 
         public void setStatus(String status) { this.status = status; }
-        public void setStockLevel(int stockLevel) { this.stockLevel = stockLevel; }
-        public void setReceivedQuantity(int receivedQuantity) { this.receivedQuantity = receivedQuantity; }
     }
 
     private static class ItemDetails {

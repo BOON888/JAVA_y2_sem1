@@ -99,7 +99,7 @@ public class finance_e extends JPanel {
         }
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusInfoCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID, finance_c.STATUS_UNPAID});
+        paymentStatusInfoCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID});
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateInfoField = new JTextField(15);
@@ -239,7 +239,7 @@ public class finance_e extends JPanel {
         approvalStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PENDING, finance_c.STATUS_VERIFIED, finance_c.STATUS_NOT_VERIFIED});
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID, finance_c.STATUS_UNPAID});
+        paymentStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID});
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateUpdateField = new JTextField(15);

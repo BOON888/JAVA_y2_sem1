@@ -13,7 +13,6 @@ public class finance_c {
     public static final String STATUS_VERIFIED = "Verified";
     public static final String STATUS_NOT_VERIFIED = "Not Verified";
     public static final String STATUS_PAID = "Paid";
-    public static final String STATUS_UNPAID = "Unpaid";
     
     private List<FinanceRecord> financeRecords = new ArrayList<>();
 

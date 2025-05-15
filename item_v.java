@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -8,6 +10,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
 
 public class item_v extends JPanel {
     private static final String ITEM_FILE = "TXT/items.txt";
@@ -39,14 +43,35 @@ public class item_v extends JPanel {
         public int getQuantity() { return quantity; }
     }
 
+    private DefaultTableModel tableModel;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
+    private JTextField searchTextField;
+
     public item_v() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(0, 0, MARGIN, 0));
 
-        // Add title label
-        JLabel titleLabel = new JLabel("Item List", SwingConstants.LEFT);
+        // Title and Search Panel
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(new EmptyBorder(10, MARGIN, 10, MARGIN)); // Add some padding around the top panel
+
+        // Title Label (Top Left)
+        JLabel titleLabel = new JLabel("Item List");
         titleLabel.setFont(TITLE_FONT);
-        add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(titleLabel, BorderLayout.WEST);
+
+        // Search Bar (Top Right, Full Width)
+        JPanel searchContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT)); // Use FlowLayout for alignment
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setFont(GLOBAL_FONT);
+        searchTextField = new JTextField(30); // Increased the width
+        searchTextField.setFont(GLOBAL_FONT);
+        searchContainer.add(searchLabel);
+        searchContainer.add(searchTextField);
+        topPanel.add(searchContainer, BorderLayout.EAST);
+
+        add(topPanel, BorderLayout.NORTH);
 
         ArrayList<Item> items = loadItems();
 
@@ -64,18 +89,21 @@ public class item_v extends JPanel {
             data[i][6] = item.getQuantity();
         }
 
-        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+        tableModel = new DefaultTableModel(data, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        JTable table = new JTable(model);
+        table = new JTable(tableModel);
         table.setFillsViewportHeight(true);
         table.setFont(GLOBAL_FONT);
         table.getTableHeader().setFont(HEADER_FONT);
         table.setRowHeight(30);
+
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
 
         JScrollPane scrollPane = new JScrollPane(table);
 
@@ -100,27 +128,40 @@ public class item_v extends JPanel {
         }
 
         add(scrollPane, BorderLayout.CENTER);
+
+        // Add listener for the search bar
+        searchTextField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = searchTextField.getText();
+                if (text.trim().length() == 0) {
+                    sorter.setRowFilter(null);
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+                }
+            }
+        });
     }
 
     private String getSupplierName(String supplierId) {
-    File file = new File(SUPPLIER_FILE);
-    if (!file.exists()) {
+        File file = new File(SUPPLIER_FILE);
+        if (!file.exists()) {
+            return "Unknown Supplier";
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split("\\|");
+                if (data.length >= 2 && data[0].trim().equals(supplierId)) {
+                    return data[1].trim();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return "Unknown Supplier";
     }
-
-    try (BufferedReader reader = new BufferedReader(new FileReader(SUPPLIER_FILE))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] data = line.split("\\|");
-            if (data.length >= 2 && data[0].trim().equals(supplierId)) {
-                return data[1].trim(); // Returns the supplier name (second field)
-            }
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-    return "Unknown Supplier";
-}
 
     private ArrayList<Item> loadItems() {
         ArrayList<Item> items = new ArrayList<>();

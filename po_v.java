@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,10 +10,16 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
 
 public class po_v extends JPanel {
 
     private static final String PO_FILE = "TXT/po.txt"; // Path to the PO file
+    private static final Font GLOBAL_FONT = new Font("Arial", Font.PLAIN, 16);
+    private static final Font HEADER_FONT = new Font("Arial", Font.BOLD, 18);
+    private static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 25);
+    private static final int MARGIN = 20;
 
     private static class PurchaseOrder {
         private String poId, prId, itemId, supplierId, status, approvedBy;
@@ -45,22 +53,41 @@ public class po_v extends JPanel {
         public String getStatus() { return status; }
     }
 
+    private DefaultTableModel tableModel;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
+    private JTextField searchTextField;
+
     public po_v() {
         setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(0, 0, 20, 0)); // Add 20-pixel bottom margin
+        setBorder(new EmptyBorder(0, 0, MARGIN, 0)); // Add consistent bottom margin
+
+        // Top Panel for Title and Search Bar
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(new EmptyBorder(10, MARGIN, 10, MARGIN));
+
+        // Title Label (Top Left)
+        JLabel titleLabel = new JLabel("PO List");
+        titleLabel.setFont(TITLE_FONT);
+        topPanel.add(titleLabel, BorderLayout.WEST);
+
+        // Search Bar (Top Right, Full Width)
+        JPanel searchContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setFont(GLOBAL_FONT);
+        searchTextField = new JTextField(30); // Increased width for better visibility
+        searchTextField.setFont(GLOBAL_FONT);
+        searchContainer.add(searchLabel);
+        searchContainer.add(searchTextField);
+        topPanel.add(searchContainer, BorderLayout.EAST);
+
+        add(topPanel, BorderLayout.NORTH);
 
         // Load purchase orders from the file
         ArrayList<PurchaseOrder> purchaseOrders = loadPurchaseOrders();
 
         // Sort the purchase orders by PO ID in descending order
         Collections.sort(purchaseOrders, (po1, po2) -> Integer.compare(Integer.parseInt(po2.getPoId()), Integer.parseInt(po1.getPoId())));
-
-        // Title for the table
-        JLabel titleLabel = new JLabel("PO List", SwingConstants.LEFT);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 25)); // Set font size to 25
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.add(titleLabel, BorderLayout.WEST);
-        add(titlePanel, BorderLayout.NORTH);
 
         // Define the column names for the table
         String[] columnNames = {"PO ID", "PR ID", "Item ID", "Supplier ID", "Qty Ordered", "Order Date", "Requested By", "Processed By", "Approved By", "Status"};
@@ -82,7 +109,7 @@ public class po_v extends JPanel {
         }
 
         // Create a table model and prevent editing of the cells
-        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+        tableModel = new DefaultTableModel(data, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;   // Disable editing of cells
@@ -90,14 +117,18 @@ public class po_v extends JPanel {
         };
 
         // Create JTable
-        JTable table = new JTable(model);
-        table.setFont(new Font("Arial", Font.PLAIN, 16)); // Set font for table content
-        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 18)); // Set font for table header
+        table = new JTable(tableModel);
+        table.setFont(GLOBAL_FONT); // Set global font for table content
+        table.getTableHeader().setFont(HEADER_FONT); // Set header font
         table.setRowHeight(30); // Increase row height for better readability
         table.setFillsViewportHeight(true);
 
         // Add the table to a scroll pane
         JScrollPane scrollPane = new JScrollPane(table);
+
+        // Set up TableRowSorter for filtering
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
 
         // Adjust the column widths
         int maxColumnWidth = 250; // Increased max column width
@@ -108,12 +139,31 @@ public class po_v extends JPanel {
                 Component comp = table.prepareRenderer(renderer, row, i);
                 width = Math.max(comp.getPreferredSize().width, width);
             }
+            TableCellRenderer headerRenderer = table.getColumnModel().getColumn(i).getHeaderRenderer();
+            if (headerRenderer == null) {
+                headerRenderer = table.getTableHeader().getDefaultRenderer();
+            }
+            Component headerComp = headerRenderer.getTableCellRendererComponent(table, table.getColumnName(i), false, false, 0, i);
+            width = Math.max(width, headerComp.getPreferredSize().width);
             width = Math.min(width + 20, maxColumnWidth);   // Increased padding
             table.getColumnModel().getColumn(i).setPreferredWidth(width);
         }
 
         // Add the scroll pane to the panel
         add(scrollPane, BorderLayout.CENTER);
+
+        // Add listener for the search bar
+        searchTextField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = searchTextField.getText();
+                if (text.trim().length() == 0) {
+                    sorter.setRowFilter(null); // Show all rows if the search field is empty
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text)); // Filter rows case-insensitively
+                }
+            }
+        });
     }
 
     private ArrayList<PurchaseOrder> loadPurchaseOrders() {

@@ -60,6 +60,7 @@ public class po_e extends JPanel {
     private JLabel detailPoIdLabel; // PO ID will remain a label
     private List<String[]> fullPoData;
     private String currentPoIdForEdit = null; // Track the PO ID being edited
+    private JTextField editOrderByField;
     // ---------------------------------------------------------
 
     public po_e() {
@@ -263,13 +264,8 @@ public class po_e extends JPanel {
         editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
         editApprovedByDropdown.setSelectedIndex(-1);
 
-        // --- Order By Dropdown (Admin + Purchase Manager) ---
-        List<String> orderByUsers = new ArrayList<>();
-        orderByUsers.addAll(getUsersByRole("am")); // Admin Manager (like 1001)
-        orderByUsers.addAll(getUsersByRole("pm")); // Purchase Manager
-        
-        editOrderByDropdown = new JComboBox<>(orderByUsers.toArray(new String[0]));
-        editOrderByDropdown.setSelectedIndex(-1);
+         editOrderByField = createDetailTextField();
+        editOrderByField.setEditable(false); // 禁止用户编辑
 
         // --- Status Dropdown ---
         String[] statusOptions = {"Pending", "Approved", "Rejected"};
@@ -283,7 +279,7 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 3, "Supplier ID:", editSupplierIdField);
         addDetailRow(detailsPanel, gbc, 4, "Quantity:", editQuantityField);
         addDetailRow(detailsPanel, gbc, 5, "Order Date:", editOrderDateField);
-        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByDropdown);
+        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByField);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
         addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusDropdown);
@@ -375,7 +371,7 @@ public class po_e extends JPanel {
         editSupplierIdField.setText(getSafeData(data, 3));
         editQuantityField.setText(getSafeData(data, 4));
         editOrderDateField.setText(getSafeData(data, 5));
-        selectDropdownByUserId(editOrderByDropdown, getSafeData(data, 6));
+        editOrderByField.setText(getUserDisplay(getSafeData(data, 6)));
         selectDropdownByUserId(editReceivedByDropdown, getSafeData(data, 7));
         selectDropdownByUserId(editApprovedByDropdown, getSafeData(data, 8));
         editStatusDropdown.setSelectedItem(getSafeData(data, 9));
@@ -400,7 +396,7 @@ public class po_e extends JPanel {
         editOrderDateField.setText("");
         editReceivedByDropdown.setSelectedIndex(-1);
         editApprovedByDropdown.setSelectedIndex(-1);
-        editOrderByDropdown.setSelectedIndex(-1);
+        editOrderByField.setText("");
         editStatusDropdown.setSelectedIndex(-1);
         currentPoIdForEdit = null;
     }
@@ -549,7 +545,7 @@ public class po_e extends JPanel {
         String updatedSupplierId = editSupplierIdField.getText();
         String updatedQuantity = editQuantityField.getText();
         String updatedOrderDate = editOrderDateField.getText();
-        String updatedOrderBy = mapRoleToID((String) editOrderByDropdown.getSelectedItem()); // Keep for editing
+        String updatedOrderBy = extractUserId(editOrderByField.getText());
         String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
         String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
         String updatedStatus = (String) editStatusDropdown.getSelectedItem();
@@ -592,4 +588,28 @@ public class po_e extends JPanel {
     }
     dropdown.setSelectedIndex(-1); // Not found, keep empty
     }
+
+    private String getUserDisplay(String userId) {
+    File file = new File("TXT/users.txt");
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split("\\|");
+            if (parts.length >= 2 && parts[0].equals(userId)) {
+                return parts[0] + " - " + parts[1]; // user_id - username
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    return userId; // fallback: return just the ID if not found
+}
+
+private String extractUserId(String display) {
+    if (display == null) return "";
+    String[] parts = display.split(" - ");
+    return parts.length > 0 ? parts[0] : display;
+}
 }

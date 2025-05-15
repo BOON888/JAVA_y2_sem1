@@ -18,7 +18,7 @@ public class finance_e extends JPanel {
 
     private JTextField financeIdInfoField;
     private JComboBox<String> poIdComboBox;
-    private JComboBox<String> paymentStatusInfoCombo;
+    private JTextField paymentStatusInfoField;
     private JTextField paymentDateInfoField;
     private JTextField amountInfoField;
     private JButton addButton;
@@ -41,7 +41,7 @@ public class finance_e extends JPanel {
     private JTextField financeIdUpdateField;
     private JTextField poIdUpdateField;
     private JComboBox<String> approvalStatusUpdateCombo;
-    private JComboBox<String> paymentStatusUpdateCombo;
+    private JTextField paymentStatusUpdateField;
     private JTextField paymentDateUpdateField;
     private JTextField amountUpdateField;
     private JTextField verifiedByUpdateField;
@@ -99,7 +99,8 @@ public class finance_e extends JPanel {
         }
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusInfoCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID});
+        paymentStatusInfoField = new JTextField(finance_c.STATUS_PAID, 15);
+        paymentStatusInfoField.setEditable(false);
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateInfoField = new JTextField(15);
@@ -125,7 +126,7 @@ public class finance_e extends JPanel {
         gbc.gridy = 3;
         inputPanel.add(paymentStatusLabel, gbc);
         gbc.gridx = 1;
-        inputPanel.add(paymentStatusInfoCombo, gbc);
+        inputPanel.add(paymentStatusInfoField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -149,7 +150,7 @@ public class finance_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String financeId = financeIdInfoField.getText().trim();
                 String poId = (String) poIdComboBox.getSelectedItem();
-                String paymentStatus = (String) paymentStatusInfoCombo.getSelectedItem();
+                String paymentStatus = finance_c.STATUS_PAID;
                 String paymentDate = paymentDateInfoField.getText().trim();
                 String amountText = amountInfoField.getText().trim();
 
@@ -173,7 +174,6 @@ public class finance_e extends JPanel {
                 
                 financeIdInfoField.setText(financeController.generateNewFinanceId());
                 poIdComboBox.setSelectedIndex(0);
-                paymentStatusInfoCombo.setSelectedIndex(0);
                 paymentDateInfoField.setText("");
                 amountInfoField.setText("");
                 
@@ -239,7 +239,8 @@ public class finance_e extends JPanel {
         approvalStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PENDING, finance_c.STATUS_VERIFIED, finance_c.STATUS_NOT_VERIFIED});
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PAID});
+        paymentStatusUpdateField = new JTextField(finance_c.STATUS_PAID, 15);
+        paymentStatusUpdateField.setEditable(false);
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
         paymentDateUpdateField = new JTextField(15);
@@ -277,7 +278,7 @@ public class finance_e extends JPanel {
         gbc.gridy = 3;
         bottomPanel.add(paymentStatusLabel, gbc);
         gbc.gridx = 1;
-        bottomPanel.add(paymentStatusUpdateCombo, gbc);
+        bottomPanel.add(paymentStatusUpdateField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -317,7 +318,7 @@ public class finance_e extends JPanel {
                                 JOptionPane.YES_NO_OPTION);
                         if (confirm == JOptionPane.YES_OPTION) {
                             record.setApprovalStatus((String) approvalStatusUpdateCombo.getSelectedItem());
-                            record.setPaymentStatus((String) paymentStatusUpdateCombo.getSelectedItem());
+                            record.setPaymentStatus(finance_c.STATUS_PAID);
                             record.setVerifiedBy(Integer.parseInt(login_c.currentUserId));
                             
                             financeController.updateFinanceRecord(record);
@@ -361,7 +362,7 @@ public class finance_e extends JPanel {
         financeIdUpdateField.setText(record.getFinanceId());
         poIdUpdateField.setText(record.getPoId());
         approvalStatusUpdateCombo.setSelectedItem(record.getApprovalStatus());
-        paymentStatusUpdateCombo.setSelectedItem(record.getPaymentStatus());
+        paymentStatusUpdateField.setText(record.getPaymentStatus());
         paymentDateUpdateField.setText(record.getPaymentDate());
         amountUpdateField.setText(record.getAmount());
         verifiedByUpdateField.setText(String.valueOf(record.getVerifiedBy()));
@@ -371,7 +372,7 @@ public class finance_e extends JPanel {
         financeIdUpdateField.setText("");
         poIdUpdateField.setText("");
         approvalStatusUpdateCombo.setSelectedIndex(0);
-        paymentStatusUpdateCombo.setSelectedIndex(0);
+        paymentStatusUpdateField.setText(finance_c.STATUS_PAID);
         paymentDateUpdateField.setText("");
         amountUpdateField.setText("");
         verifiedByUpdateField.setText("");

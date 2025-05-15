@@ -28,8 +28,8 @@ public class am extends JPanel {
 
         // ===== BOTTOM BUTTON PANEL =====
         JPanel bottomPanel = new JPanel(new GridLayout(1, 7)); // 6 buttons + 1 Exit button
-        String[] buttonNames = {"User", "Supplier", "Item", "Sales", "PR", "PO"};
-        String[] classNames = {"user_am", "supplier_e", "item_e", "sales_e", "pr_e", "po_e"};
+        String[] buttonNames = {"User", "Supplier", "Item", "Sales", "PR", "PO", "Finance"};
+        String[] classNames = {"user_am", "supplier_e", "item_e", "sales_e", "pr_e", "po_e", "finance_am"};
 
         for (int i = 0; i < buttonNames.length; i++) {
             JButton button = new JButton(buttonNames[i]);

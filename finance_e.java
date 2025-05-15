@@ -8,7 +8,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class finance_e extends JPanel {
     private finance_c financeController;
@@ -47,6 +50,10 @@ public class finance_e extends JPanel {
     private JTextField verifiedByUpdateField;
     private JButton updateButton;
 
+    // Date format for validation
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yyyy");
+    private static final Pattern AMOUNT_PATTERN = Pattern.compile("^\\d+(\\.\\d{1,2})?$");
+
     public finance_e() {
         this.financeController = new finance_c();
         setLayout(new BorderLayout());
@@ -64,6 +71,9 @@ public class finance_e extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
 
         populateFinanceListTableTop();
+        
+        // Initialize date format
+        DATE_FORMAT.setLenient(false);
     }
 
     private JPanel createFinanceInfoPanel() {
@@ -102,11 +112,13 @@ public class finance_e extends JPanel {
         paymentStatusInfoField = new JTextField(finance_c.STATUS_PAID, 15);
         paymentStatusInfoField.setEditable(false);
 
-        JLabel paymentDateLabel = new JLabel("Payment Date:");
+        JLabel paymentDateLabel = new JLabel("Payment Date (dd/mm/yyyy):");
         paymentDateInfoField = new JTextField(15);
+        paymentDateInfoField.setToolTipText("Enter date in dd/mm/yyyy format");
 
         JLabel amountLabel = new JLabel("Amount:");
         amountInfoField = new JTextField(15);
+        amountInfoField.setToolTipText("Enter numerical value (e.g. 100.50)");
 
         addButton = new JButton("Add");
 
@@ -154,8 +166,27 @@ public class finance_e extends JPanel {
                 String paymentDate = paymentDateInfoField.getText().trim();
                 String amountText = amountInfoField.getText().trim();
 
+                // Validate fields
                 if (financeId.isEmpty() || poId == null || poId.isEmpty() || paymentDate.isEmpty() || amountText.isEmpty()) {
                     JOptionPane.showMessageDialog(finance_e.this, "Please fill in all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate date format
+                try {
+                    DATE_FORMAT.parse(paymentDate);
+                } catch (ParseException ex) {
+                    JOptionPane.showMessageDialog(finance_e.this, 
+                        "Invalid date format. Please use dd/mm/yyyy format", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate amount format
+                if (!AMOUNT_PATTERN.matcher(amountText).matches()) {
+                    JOptionPane.showMessageDialog(finance_e.this, 
+                        "Invalid amount. Please enter a valid number (e.g. 100 or 100.50)", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 

@@ -253,28 +253,28 @@ public class po_e extends JPanel {
 
         // --- Received By Dropdown (Inventory Manager) ---
         List<String> imUsers = getUsersByRole("im");
-        imUsers.add(0, ""); // Empty default option
+        
         editReceivedByDropdown = new JComboBox<>(imUsers.toArray(new String[0]));
-        editReceivedByDropdown.setSelectedIndex(0);
+        editReceivedByDropdown.setSelectedIndex(-1);
 
         // --- Approved By Dropdown (Financial Manager) ---
         List<String> fmUsers = getUsersByRole("fm");
-        fmUsers.add(0, ""); // Empty default option
+       
         editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
-        editApprovedByDropdown.setSelectedIndex(0);
+        editApprovedByDropdown.setSelectedIndex(-1);
 
         // --- Order By Dropdown (Admin + Purchase Manager) ---
         List<String> orderByUsers = new ArrayList<>();
         orderByUsers.addAll(getUsersByRole("am")); // Admin Manager (like 1001)
         orderByUsers.addAll(getUsersByRole("pm")); // Purchase Manager
-        orderByUsers.add(0, ""); // Empty default option
+        
         editOrderByDropdown = new JComboBox<>(orderByUsers.toArray(new String[0]));
-        editOrderByDropdown.setSelectedIndex(0);
+        editOrderByDropdown.setSelectedIndex(-1);
 
         // --- Status Dropdown ---
-        String[] statusOptions = {"", "Pending", "Approved", "Rejected"};
+        String[] statusOptions = {"Pending", "Approved", "Rejected"};
         editStatusDropdown = new JComboBox<>(statusOptions);
-        editStatusDropdown.setSelectedIndex(0);
+        editStatusDropdown.setSelectedIndex(-1);
 
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
         addDetailRow(detailsPanel, gbc, 0, "PO ID:", detailPoIdLabel);
@@ -398,10 +398,10 @@ public class po_e extends JPanel {
         editSupplierIdField.setText("");
         editQuantityField.setText("");
         editOrderDateField.setText("");
-        editOrderByDropdown.setSelectedIndex(0);
-        editReceivedByDropdown.setSelectedIndex(0);
-        editApprovedByDropdown.setSelectedIndex(0);
-        editStatusDropdown.setSelectedIndex(0);
+        editReceivedByDropdown.setSelectedIndex(-1);
+        editApprovedByDropdown.setSelectedIndex(-1);
+        editOrderByDropdown.setSelectedIndex(-1);
+        editStatusDropdown.setSelectedIndex(-1);
         currentPoIdForEdit = null;
     }
 

@@ -248,10 +248,33 @@ public class po_e extends JPanel {
         editSupplierIdField = createDetailTextField();
         editQuantityField = createDetailTextField();
         editOrderDateField = createDetailTextField();
-        editOrderByDropdown = new JComboBox<>(new String[]{"Purchase Manager", "Administrator"});
-        editReceivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
-        editApprovedByDropdown = new JComboBox<>(getUsersByRole("fm").toArray(new String[0]));
-        editStatusDropdown = new JComboBox<>(new String[]{"Pending", "Approved", "Rejected"});
+
+        // === Create Dropdowns ===
+
+        // --- Received By Dropdown (Inventory Manager) ---
+        List<String> imUsers = getUsersByRole("im");
+        imUsers.add(0, ""); // Empty default option
+        editReceivedByDropdown = new JComboBox<>(imUsers.toArray(new String[0]));
+        editReceivedByDropdown.setSelectedIndex(0);
+
+        // --- Approved By Dropdown (Financial Manager) ---
+        List<String> fmUsers = getUsersByRole("fm");
+        fmUsers.add(0, ""); // Empty default option
+        editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
+        editApprovedByDropdown.setSelectedIndex(0);
+
+        // --- Order By Dropdown (Admin + Purchase Manager) ---
+        List<String> orderByUsers = new ArrayList<>();
+        orderByUsers.addAll(getUsersByRole("am")); // Admin Manager (like 1001)
+        orderByUsers.addAll(getUsersByRole("pm")); // Purchase Manager
+        orderByUsers.add(0, ""); // Empty default option
+        editOrderByDropdown = new JComboBox<>(orderByUsers.toArray(new String[0]));
+        editOrderByDropdown.setSelectedIndex(0);
+
+        // --- Status Dropdown ---
+        String[] statusOptions = {"", "Pending", "Approved", "Rejected"};
+        editStatusDropdown = new JComboBox<>(statusOptions);
+        editStatusDropdown.setSelectedIndex(0);
 
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
         addDetailRow(detailsPanel, gbc, 0, "PO ID:", detailPoIdLabel);
@@ -260,6 +283,7 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 3, "Supplier ID:", editSupplierIdField);
         addDetailRow(detailsPanel, gbc, 4, "Quantity:", editQuantityField);
         addDetailRow(detailsPanel, gbc, 5, "Order Date:", editOrderDateField);
+        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByDropdown);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
         addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusDropdown);
@@ -350,9 +374,10 @@ public class po_e extends JPanel {
         editItemIdField.setText(getSafeData(data, 2));
         editSupplierIdField.setText(getSafeData(data, 3));
         editQuantityField.setText(getSafeData(data, 4));
-        editOrderDateField.setText(getSafeData(data, 5));editOrderByDropdown.setSelectedItem(mapIDToRole(getSafeData(data, 6)));
-        editReceivedByDropdown.setSelectedItem(mapIDToRole(getSafeData(data, 7)));
-        editApprovedByDropdown.setSelectedItem(mapIDToRole(getSafeData(data, 8)));
+        editOrderDateField.setText(getSafeData(data, 5));
+        selectDropdownByUserId(editOrderByDropdown, getSafeData(data, 6));
+        selectDropdownByUserId(editReceivedByDropdown, getSafeData(data, 7));
+        selectDropdownByUserId(editApprovedByDropdown, getSafeData(data, 8));
         editStatusDropdown.setSelectedItem(getSafeData(data, 9));
     }
 
@@ -555,5 +580,16 @@ public class po_e extends JPanel {
     // Method to set the logged-in user (you'd call this after successful login)
     public void setLoggedInUser(String username) {
         this.loggedInUser = username;
+    }
+
+    private void selectDropdownByUserId(JComboBox<String> dropdown, String userId) {
+    for (int i = 0; i < dropdown.getItemCount(); i++) {
+        String item = dropdown.getItemAt(i);
+        if (item.startsWith(userId + " -")) {
+            dropdown.setSelectedIndex(i);
+            return;
+        }
+    }
+    dropdown.setSelectedIndex(-1); // Not found, keep empty
     }
 }

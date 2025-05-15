@@ -5,3 +5,8 @@
 1005|eden|password|pm|1234567890|eden@gmail.com
 1006|aden|password|im|1234567890|eden@gmail.com
 1007|amy|password|fm|1234567890|amy@gmail.com
+1008|alex|password|fm|1234567890|alex@gmail.com
+1009|yee wen|password|fm|1234567890|yeewen@gmail.com
+1010|sagai|password|im|1234567890|sagai@gmail.com
+1011|shawn|password|im|1234567890|shawn@gmail.com
+

@@ -175,41 +175,35 @@ public class finance_am extends JPanel {
 
     class ButtonEditor extends DefaultCellEditor {
 
-        private final JButton button;
+        private final JPanel panel;
+        private final JButton viewButton;
         private String financeId;
-        private boolean isPushed;
 
         public ButtonEditor(finance_am parent) {
-            super(new JTextField());
-            button = new JButton("View");
-            button.setOpaque(true);
-            button.addActionListener(e -> fireEditingStopped());
+            super(new JCheckBox());  // Dummy editor component
+
+            panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            viewButton = new JButton("View");
+
+            // Attach actual logic directly here!
+            viewButton.addActionListener(e -> {
+                parent.showFinanceDetails(financeId);  // Run immediately
+                fireEditingStopped(); // Finish editing after action
+            });
+
+            panel.add(viewButton);
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value,
                 boolean isSelected, int row, int column) {
-            financeId = (String) table.getValueAt(row, 0);
-            isPushed = true;
-
-            JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            panel.add(button);
+            financeId = table.getValueAt(row, 0).toString();  // Get ID
             return panel;
         }
 
         @Override
         public Object getCellEditorValue() {
-            if (isPushed) {
-                showFinanceDetails(financeId);
-            }
-            isPushed = false;
             return "View";
-        }
-
-        @Override
-        public boolean stopCellEditing() {
-            isPushed = false;
-            return super.stopCellEditing();
         }
     }
 

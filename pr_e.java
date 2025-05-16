@@ -194,7 +194,7 @@ public class pr_e extends JPanel {
         // -------------------------
 
         // --- Bottom Table (PR Details) ---
-        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Requested", "Required Date", "Raised By", "Status"};
+        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Request", "Required Date", "Raised By", "Status"};
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {

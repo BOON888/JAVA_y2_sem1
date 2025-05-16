@@ -57,6 +57,7 @@ public class po_e extends JPanel {
     private JPanel detailsPanel; // Panel to show details below table
     private JTextField editPrIdField, editItemIdField, editSupplierIdField, editQuantityField, editOrderDateField;
     private JComboBox<String> editOrderByDropdown, editReceivedByDropdown, editApprovedByDropdown, editStatusDropdown;
+    private JTextField editStatusField;
     private JLabel detailPoIdLabel; // PO ID will remain a label
     private List<String[]> fullPoData;
     private String currentPoIdForEdit = null; // Track the PO ID being edited
@@ -272,6 +273,10 @@ public class po_e extends JPanel {
         editStatusDropdown = new JComboBox<>(statusOptions);
         editStatusDropdown.setSelectedIndex(-1);
 
+        // --- Status Field (View Only) ---
+        editStatusField = createDetailTextField(); // Create as JTextField
+        editStatusField.setEditable(false);      // Make it non-editable
+
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
         addDetailRow(detailsPanel, gbc, 0, "PO ID:", detailPoIdLabel);
         addDetailRow(detailsPanel, gbc, 1, "PR ID:", editPrIdField);
@@ -282,7 +287,7 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByField);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
-        addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusDropdown);
+        addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusField);  
 
         tablePanel.add(detailsPanel, BorderLayout.SOUTH); // Add details panel below table
         //--------------------------------------------
@@ -374,7 +379,7 @@ public class po_e extends JPanel {
         editOrderByField.setText(getUserDisplay(getSafeData(data, 6)));
         selectDropdownByUserId(editReceivedByDropdown, getSafeData(data, 7));
         selectDropdownByUserId(editApprovedByDropdown, getSafeData(data, 8));
-        editStatusDropdown.setSelectedItem(getSafeData(data, 9));
+        editStatusField.setText(getSafeData(data, 9)); 
     }
 
     // Helper method to safely get data from array, returning "N/A" if index is bad
@@ -397,7 +402,7 @@ public class po_e extends JPanel {
         editReceivedByDropdown.setSelectedIndex(-1);
         editApprovedByDropdown.setSelectedIndex(-1);
         editOrderByField.setText("");
-        editStatusDropdown.setSelectedIndex(-1);
+        editStatusField.setText(""); 
         currentPoIdForEdit = null;
     }
 
@@ -535,33 +540,46 @@ public class po_e extends JPanel {
     }
 
     public void updateSelectedPO() {
-        if (currentPoIdForEdit == null) {
-            JOptionPane.showMessageDialog(this, "Please view a Purchase Order before updating.", "No PO Selected", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String updatedPrId = editPrIdField.getText();
-        String updatedItemId = editItemIdField.getText();
-        String updatedSupplierId = editSupplierIdField.getText();
-        String updatedQuantity = editQuantityField.getText();
-        String updatedOrderDate = editOrderDateField.getText();
-        String updatedOrderBy = extractUserId(editOrderByField.getText());
-        String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
-        String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
-        String updatedStatus = (String) editStatusDropdown.getSelectedItem();
-
-        String[] updatedData = {currentPoIdForEdit, updatedPrId, updatedItemId, updatedSupplierId, updatedQuantity,
-                               updatedOrderDate, updatedOrderBy, updatedReceivedBy, updatedApprovedBy, updatedStatus};
-
-        if (poController.updatePurchaseOrder(currentPoIdForEdit, updatedData)) {
-            JOptionPane.showMessageDialog(this, "Purchase Order " + currentPoIdForEdit + " updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            loadPurchaseOrders();
-            clearDetailsPanel();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to update Purchase Order " + currentPoIdForEdit + ".", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    if (currentPoIdForEdit == null) {
+        JOptionPane.showMessageDialog(this, "Please view a Purchase Order before updating.", "No PO Selected", JOptionPane.WARNING_MESSAGE);
+        return;
     }
 
+    String updatedPrId = editPrIdField.getText();
+    String updatedItemId = editItemIdField.getText();
+    String updatedSupplierId = editSupplierIdField.getText();
+    String updatedQuantity = quantityField.getText();                  
+    updatedQuantity = editQuantityField.getText(); // Using editQuantityField
+
+    String updatedOrderDate = editOrderDateField.getText();
+    String updatedOrderBy = extractUserId(editOrderByField.getText());
+    String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
+    String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
+
+    String originalStatus = "N/A"; // Default value if the PO is not found or status is missing
+    if (currentPoIdForEdit != null && fullPoData != null) {
+        for (String[] poRecord : fullPoData) {
+            // Assuming poRecord[0] is the PO ID and poRecord[9] is the Status
+            if (poRecord.length > 9 && poRecord[0].equals(currentPoIdForEdit)) {
+                originalStatus = getSafeData(poRecord, 9);
+                break;
+            }
+        }
+    }
+    String updatedStatus = originalStatus; // Use the retrieved original status
+    // --- END OF CHANGE ---
+
+    String[] updatedData = {currentPoIdForEdit, updatedPrId, updatedItemId, updatedSupplierId, updatedQuantity,
+                            updatedOrderDate, updatedOrderBy, updatedReceivedBy, updatedApprovedBy, updatedStatus};
+
+    if (poController.updatePurchaseOrder(currentPoIdForEdit, updatedData)) {
+        JOptionPane.showMessageDialog(this, "Purchase Order " + currentPoIdForEdit + " updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        loadPurchaseOrders();
+        clearDetailsPanel();
+    } else {
+        JOptionPane.showMessageDialog(this, "Failed to update Purchase Order " + currentPoIdForEdit + ".", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Purchase Order Management");
@@ -607,9 +625,9 @@ public class po_e extends JPanel {
     return userId; // fallback: return just the ID if not found
 }
 
-private String extractUserId(String display) {
-    if (display == null) return "";
-    String[] parts = display.split(" - ");
-    return parts.length > 0 ? parts[0] : display;
-}
+    private String extractUserId(String display) {
+        if (display == null) return "";
+        String[] parts = display.split(" - ");
+        return parts.length > 0 ? parts[0] : display;
+    }
 }

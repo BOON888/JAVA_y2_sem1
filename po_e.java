@@ -58,10 +58,11 @@ public class po_e extends JPanel {
     private JTextField editPrIdField, editItemIdField, editSupplierIdField, editQuantityField, editOrderDateField;
     private JComboBox<String> editOrderByDropdown, editReceivedByDropdown, editApprovedByDropdown, editStatusDropdown;
     private JTextField editStatusField;
+    private JLabel detailStatusLabel;
     private JLabel detailPoIdLabel; // PO ID will remain a label
     private List<String[]> fullPoData;
     private String currentPoIdForEdit = null; // Track the PO ID being edited
-    private JTextField editOrderByField;
+    private JLabel detailOrderByLabel;
     // ---------------------------------------------------------
 
     public po_e() {
@@ -255,18 +256,18 @@ public class po_e extends JPanel {
 
         // --- Received By Dropdown (Inventory Manager) ---
         List<String> imUsers = getUsersByRole("im");
-        
         editReceivedByDropdown = new JComboBox<>(imUsers.toArray(new String[0]));
         editReceivedByDropdown.setSelectedIndex(-1);
 
         // --- Approved By Dropdown (Financial Manager) ---
         List<String> fmUsers = getUsersByRole("fm");
-       
         editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
         editApprovedByDropdown.setSelectedIndex(-1);
-
-        editOrderByField = createDetailTextField();
-        editOrderByField.setEditable(false); // 禁止用户编辑
+        
+        // --- Order By Label (View Only) ---
+        detailOrderByLabel = new JLabel("---");
+        detailOrderByLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        detailOrderByLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // --- Status Dropdown ---
         String[] statusOptions = {"Pending", "Approved", "Rejected"};
@@ -274,8 +275,9 @@ public class po_e extends JPanel {
         editStatusDropdown.setSelectedIndex(-1);
 
         // --- Status Field (View Only) ---
-        editStatusField = createDetailTextField(); // Create as JTextField
-        editStatusField.setEditable(false);      // Make it non-editable
+        detailStatusLabel = new JLabel("---");
+        detailStatusLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        detailStatusLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
         addDetailRow(detailsPanel, gbc, 0, "PO ID:", detailPoIdLabel);
@@ -284,11 +286,10 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 3, "Supplier ID:", editSupplierIdField);
         addDetailRow(detailsPanel, gbc, 4, "Quantity:", editQuantityField);
         addDetailRow(detailsPanel, gbc, 5, "Order Date:", editOrderDateField);
-        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByField);
+        addDetailRow(detailsPanel, gbc, 6, "Order By:", detailOrderByLabel);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
-        addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusField);  
-
+        addDetailRow(detailsPanel, gbc, 9, "Status:", detailStatusLabel); 
         tablePanel.add(detailsPanel, BorderLayout.SOUTH); // Add details panel below table
         //--------------------------------------------
 
@@ -376,10 +377,10 @@ public class po_e extends JPanel {
         editSupplierIdField.setText(getSafeData(data, 3));
         editQuantityField.setText(getSafeData(data, 4));
         editOrderDateField.setText(getSafeData(data, 5));
-        editOrderByField.setText(getUserDisplay(getSafeData(data, 6)));
+        detailOrderByLabel.setText(getUserDisplay(getSafeData(data, 6))); 
         selectDropdownByUserId(editReceivedByDropdown, getSafeData(data, 7));
         selectDropdownByUserId(editApprovedByDropdown, getSafeData(data, 8));
-        editStatusField.setText(getSafeData(data, 9)); 
+        detailStatusLabel.setText(getSafeData(data, 9));
     }
 
     // Helper method to safely get data from array, returning "N/A" if index is bad
@@ -401,8 +402,8 @@ public class po_e extends JPanel {
         editOrderDateField.setText("");
         editReceivedByDropdown.setSelectedIndex(-1);
         editApprovedByDropdown.setSelectedIndex(-1);
-        editOrderByField.setText("");
-        editStatusField.setText(""); 
+        detailOrderByLabel.setText("---"); 
+        detailStatusLabel.setText("---"); 
         currentPoIdForEdit = null;
     }
 
@@ -552,7 +553,7 @@ public class po_e extends JPanel {
     updatedQuantity = editQuantityField.getText(); // Using editQuantityField
 
     String updatedOrderDate = editOrderDateField.getText();
-    String updatedOrderBy = extractUserId(editOrderByField.getText());
+    String updatedOrderBy = extractUserId(detailOrderByLabel.getText());
     String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
     String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
 

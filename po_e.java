@@ -63,6 +63,7 @@ public class po_e extends JPanel {
     private List<String[]> fullPoData;
     private String currentPoIdForEdit = null; // Track the PO ID being edited
     private JLabel detailOrderByLabel;
+    private JComboBox<String> prIDDropdown;
     // ---------------------------------------------------------
 
     public po_e() {
@@ -96,25 +97,49 @@ public class po_e extends JPanel {
                 new JLabel("Approved By:")
         };
 
-        prIDField = new JTextField(15);
+        prIDDropdown = new JComboBox<>(getUniquePrIdsFromFile().toArray(new String[0]));
+        prIDDropdown.setEditable(false);
+        prIDDropdown.addActionListener(e -> {
+            String selectedPrId = (String) prIDDropdown.getSelectedItem();
+            if (selectedPrId != null && !selectedPrId.isEmpty()) {
+                String[] data = getPoDataByPrId(selectedPrId);
+                if (data != null) {
+                    itemIDField.setText(data[2]);      // item_id
+                    supplierIDField.setText(data[3]);  // supplier_id
+                }
+            }
+        });
         itemIDField = new JTextField(15);
         supplierIDField = new JTextField(15);
         quantityField = new JTextField(15);
         orderDateField = new JTextField(15);
 
-        JTextField[] fields = { prIDField, itemIDField, supplierIDField, quantityField, orderDateField };
+        JTextField[] fields = { itemIDField, supplierIDField, quantityField, orderDateField };
 
-        for (int i = 0; i < 5; i++) {
-            labels[i].setFont(new Font("Arial", Font.BOLD, 16));
+        // Add PR ID label and dropdown
+        labels[0].setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.weightx = 0;
+        panel.add(labels[0], gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        panel.add(prIDDropdown, gbc);
+
+        // Then add remaining fields
+        for (int j = 1; j < 5; j++) {
+            labels[j].setFont(new Font("Arial", Font.BOLD, 16));
             gbc.gridx = 0;
-            gbc.gridy = i;
+            gbc.gridy = j;
             gbc.anchor = GridBagConstraints.WEST;
             gbc.weightx = 0;
-            panel.add(labels[i], gbc);
+            panel.add(labels[j], gbc);
 
             gbc.gridx = 1;
             gbc.weightx = 1.0;
-            panel.add(fields[i], gbc);
+            panel.add(fields[j - 1], gbc); 
         }
 
         receivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
@@ -145,7 +170,7 @@ public class po_e extends JPanel {
         addButton = new JButton("Add Purchase Order");
         addButton.setFont(new Font("Arial", Font.BOLD, 16));
         addButton.addActionListener(e -> {
-            String prID = prIDField.getText().trim();
+            String prID = (String) prIDDropdown.getSelectedItem();
             String itemID = itemIDField.getText().trim();
             String supplierID = supplierIDField.getText().trim();
             String quantityStr = quantityField.getText().trim();
@@ -631,4 +656,36 @@ public class po_e extends JPanel {
         String[] parts = display.split(" - ");
         return parts.length > 0 ? parts[0] : display;
     }
+
+    private List<String> getUniquePrIdsFromFile() {
+    List<String> prIds = new ArrayList<>();
+    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split("\\|");
+            if (parts.length >= 2 && !prIds.contains(parts[1])) {
+                prIds.add(parts[1]); // parts[1] = pr_id
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    return prIds;
+    }
+
+    private String[] getPoDataByPrId(String prId) {
+    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split("\\|");
+            if (parts.length >= 4 && parts[1].equals(prId)) {
+                return parts;
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    return null;
+    }
+
 }

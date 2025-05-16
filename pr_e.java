@@ -103,7 +103,7 @@ public class pr_e extends JPanel {
         JLabel supplierLabel = new JLabel("Supplier ID:");
         supplierIDField = new JTextField(15);
 
-        JLabel quantityLabel = new JLabel("Quantity Requested:");
+        JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);
 
         JLabel dateLabel = new JLabel("Required Date (DD-MM-YYYY):");

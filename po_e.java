@@ -48,7 +48,7 @@ public class po_e extends JPanel {
         return userList;
     }
 
-    // --- PO List Components (Unchanged - Order By Remains) ---
+     // --- PO List Components (Unchanged - Order By Remains) ---
     private JTable poTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
@@ -222,7 +222,7 @@ public class po_e extends JPanel {
         poTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN); // Let Actions column take remaining space
 
         JScrollPane scrollPane = new JScrollPane(poTable);
-        tablePanel.add(scrollPane, BorderLayout.CENTER); // Add table scroll pane to center
+        tablePanel.add(scrollPane, BorderLayout.CENTER); // Add table scroll pane to center 
         //--------------------------------------------
 
         // --- Details Panel (Below Table - Order By Remains) ---
@@ -264,7 +264,7 @@ public class po_e extends JPanel {
         editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
         editApprovedByDropdown.setSelectedIndex(-1);
 
-         editOrderByField = createDetailTextField();
+        editOrderByField = createDetailTextField();
         editOrderByField.setEditable(false); // 禁止用户编辑
 
         // --- Status Dropdown ---

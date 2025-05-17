@@ -10,7 +10,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
@@ -97,16 +99,14 @@ public class po_e extends JPanel {
                 new JLabel("Approved By:")
         };
 
-        prIDDropdown = new JComboBox<>(getUniquePrIdsFromFile().toArray(new String[0]));
+        prIDDropdown = new JComboBox<>(getApprovedPrIds().toArray(new String[0]));
         prIDDropdown.setEditable(false);
         prIDDropdown.addActionListener(e -> {
             String selectedPrId = (String) prIDDropdown.getSelectedItem();
-            if (selectedPrId != null && !selectedPrId.isEmpty()) {
-                String[] data = getPoDataByPrId(selectedPrId);
-                if (data != null) {
-                    itemIDField.setText(data[2]);      // item_id
-                    supplierIDField.setText(data[3]);  // supplier_id
-                }
+            if (selectedPrId != null && approvedPrMap.containsKey(selectedPrId)) {
+                String[] data = approvedPrMap.get(selectedPrId);
+                itemIDField.setText(data[0]);      // item_id
+                supplierIDField.setText(data[1]);  // supplier_id
             }
         });
         itemIDField = new JTextField(15);
@@ -657,35 +657,37 @@ public class po_e extends JPanel {
         return parts.length > 0 ? parts[0] : display;
     }
 
-    private List<String> getUniquePrIdsFromFile() {
-    List<String> prIds = new ArrayList<>();
-    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
+    private Map<String, String[]> approvedPrMap = new HashMap<>();
+
+private void loadApprovedPrData() {
+    approvedPrMap.clear();
+    File file = new File("TXT/pr.txt");
+    if (!file.exists()) {
+        System.out.println("pr.txt file not found.");
+        return;
+    }
+
+    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
         String line;
-        while ((line = reader.readLine()) != null) {
+        while ((line = br.readLine()) != null) {
             String[] parts = line.split("\\|");
-            if (parts.length >= 2 && !prIds.contains(parts[1])) {
-                prIds.add(parts[1]); // parts[1] = pr_id
+            if (parts.length >= 7) {
+                String prId = parts[0];
+                String itemId = parts[1];
+                String supplierId = parts[2];
+                String status = parts[6];
+                if ("Approved".equalsIgnoreCase(status)) {
+                    approvedPrMap.put(prId, new String[]{itemId, supplierId});
+                }
             }
         }
     } catch (IOException e) {
         e.printStackTrace();
     }
-    return prIds;
-    }
+}
 
-    private String[] getPoDataByPrId(String prId) {
-    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] parts = line.split("\\|");
-            if (parts.length >= 4 && parts[1].equals(prId)) {
-                return parts;
-            }
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-    return null;
-    }
-
+private List<String> getApprovedPrIds() {
+    loadApprovedPrData();
+    return new ArrayList<>(approvedPrMap.keySet());
+}
 }

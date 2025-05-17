@@ -47,129 +47,138 @@ public class po_e_c {
 
     // 添加采购订单
     public boolean addPurchaseOrder(String prID, String itemID, String supplierID, String quantityStr, String orderDate,
-                                     String receivedBy, String approvedBy) {
-        if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Please fill all required fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+                                 String receivedBy, String approvedBy) {
+    if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Please fill all required fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
+        return false;
+    }
 
-        int quantity;
-        try {
-            quantity = Integer.parseInt(quantityStr);
-            if (quantity <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "Quantity must be a positive number.", "Input Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+    int quantity;
+    try {
+        quantity = Integer.parseInt(quantityStr);
+        if (quantity <= 0) throw new NumberFormatException();
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(null, "Quantity must be a positive number.", "Input Error", JOptionPane.ERROR_MESSAGE);
+        return false;
+    }
 
-        if (!orderDate.matches("\\d{2}-\\d{2}-\\d{4}")) {
-            JOptionPane.showMessageDialog(null, "Order Date must be in DD-MM-YYYY format.", "Input Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+    if (!orderDate.matches("\\d{2}-\\d{2}-\\d{4}")) {
+        JOptionPane.showMessageDialog(null, "Order Date must be in DD-MM-YYYY format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+        return false;
+    }
 
-        int poID = generatePOID();
-        if (poID < 0) {
-            JOptionPane.showMessageDialog(null, "Could not generate PO ID.", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        String formattedPOID = String.format("%04d", poID);
+    int poID = generatePOID();
+    if (poID < 0) {
+        JOptionPane.showMessageDialog(null, "Could not generate PO ID.", "Error", JOptionPane.ERROR_MESSAGE);
+        return false;
+    }
+    String formattedPOID = String.format("%04d", poID);
 
-        // 从 login_c 读取当前用户 ID
-        String orderBy = login_c.currentUserId != null ? login_c.currentUserId : "Unknown";
+    String orderBy = login_c.currentUserId != null ? login_c.currentUserId : "Unknown";
 
-        String newPO = String.join("|", formattedPOID, prID, itemID, supplierID, String.valueOf(quantity), orderDate,
-                orderBy, receivedBy, approvedBy, "Pending");
+    // 提取 user ID 部分
+    String receivedByID = receivedBy.split(" - ")[0].trim();
+    String approvedByID = approvedBy.split(" - ")[0].trim();
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PO_FILE, true))) {
-            writer.write(newPO);
-            writer.newLine();
-            JOptionPane.showMessageDialog(null, "Purchase Order (PO ID: " + formattedPOID + ") added successfully!",
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
-            return true;
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Error saving purchase order: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-            return false;
+    String newPO = String.join("|", formattedPOID, prID, itemID, supplierID, String.valueOf(quantity), orderDate,
+            orderBy, receivedByID, approvedByID, "Pending");
+
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(PO_FILE, true))) {
+        writer.write(newPO);
+        writer.newLine();
+        JOptionPane.showMessageDialog(null, "Purchase Order (PO ID: " + formattedPOID + ") added successfully!",
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+        return true;
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(null, "Error saving purchase order: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+        return false;
         }
     }
 
     // 从文件中删除采购订单
     public boolean deletePurchaseOrder(String poIDToDelete) {
-        File inputFile = new File(PO_FILE);
-        File tempFile = null;
-        try {
-            tempFile = File.createTempFile("temp_po_", ".txt", inputFile.getParentFile());
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Could not create temporary file: " + e.getMessage(), "File Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-
-        boolean deleted = false;
-        boolean found = false;
-
-        if (!inputFile.exists()) {
-            JOptionPane.showMessageDialog(null, "PO file not found.", "Error", JOptionPane.ERROR_MESSAGE);
-            if (tempFile.exists())
-                tempFile.delete();
-            return false;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty())
-                    continue;
-                String[] data = line.split("\\|");
-                if (data.length > 0 && data[0].equals(poIDToDelete)) {
-                    found = true;
-                } else {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "Error processing PO file for deletion: " + e.getMessage(), "File Error",
-                    JOptionPane.ERROR_MESSAGE);
-            if (tempFile.exists())
-                tempFile.delete();
-            return false;
-        }
-
-        if (!found) {
-            JOptionPane.showMessageDialog(null, "Could not find PO ID " + poIDToDelete + " in the file.", "Not Found",
-                    JOptionPane.WARNING_MESSAGE);
-            if (tempFile.exists())
-                tempFile.delete();
-            return false;
-        }
-
-        try {
-            if (!inputFile.delete()) {
-                System.gc();
-                Thread.sleep(100);
-                if (!inputFile.delete())
-                    throw new IOException("Could not delete original file: " + inputFile.getAbsolutePath());
-            }
-            if (!tempFile.renameTo(inputFile)) {
-                try (InputStream in = new FileInputStream(tempFile);
-                     OutputStream out = new FileOutputStream(inputFile)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = in.read(buf)) > 0)
-                        out.write(buf, 0, len);
-                } finally {
-                    tempFile.delete();
-                }
-            }
-            return true;
-        } catch (IOException | SecurityException | InterruptedException e) {
-            JOptionPane.showMessageDialog(null, "Error updating PO file: " + e.getMessage(), "File Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
+    File inputFile = new File(PO_FILE);
+    File tempFile = null;
+    try {
+        tempFile = File.createTempFile("temp_po_", ".txt", inputFile.getParentFile());
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(null, "Could not create temporary file: " + e.getMessage(), "File Error",
+                JOptionPane.ERROR_MESSAGE);
+        return false;
     }
+
+    boolean deleted = false;
+    boolean found = false;
+
+    if (!inputFile.exists()) {
+        JOptionPane.showMessageDialog(null, "PO file not found.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (tempFile.exists()) tempFile.delete();
+        return false;
+    }
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+         BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.trim().isEmpty()) continue;
+            String[] data = line.split("\\|");
+            if (data.length > 0 && data[0].equals(poIDToDelete)) {
+                found = true;
+                if (data.length >= 10 && data[9].equalsIgnoreCase("Approved")) {
+                    // 不允许删除已批准的 PO
+                    JOptionPane.showMessageDialog(null, "Cannot delete PO ID " + poIDToDelete + " because it is already Approved.",
+                            "Delete Not Allowed", JOptionPane.WARNING_MESSAGE);
+                    writer.write(line);  // 保留原行
+                    writer.newLine();
+                } else {
+                    deleted = true;
+                    // 不写入此行，即删除
+                }
+            } else {
+                writer.write(line);
+                writer.newLine();
+            }
+        }
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(null, "Error processing PO file for deletion: " + e.getMessage(), "File Error",
+                JOptionPane.ERROR_MESSAGE);
+        if (tempFile.exists()) tempFile.delete();
+        return false;
+    }
+
+    if (!found) {
+        JOptionPane.showMessageDialog(null, "Could not find PO ID " + poIDToDelete + " in the file.", "Not Found",
+                JOptionPane.WARNING_MESSAGE);
+        if (tempFile.exists()) tempFile.delete();
+        return false;
+    }
+
+    try {
+        if (!inputFile.delete()) {
+            System.gc();
+            Thread.sleep(100);
+            if (!inputFile.delete())
+                throw new IOException("Could not delete original file: " + inputFile.getAbsolutePath());
+        }
+        if (!tempFile.renameTo(inputFile)) {
+            try (InputStream in = new FileInputStream(tempFile);
+                 OutputStream out = new FileOutputStream(inputFile)) {
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = in.read(buf)) > 0)
+                    out.write(buf, 0, len);
+            } finally {
+                tempFile.delete();
+            }
+        }
+        return deleted;
+    } catch (IOException | SecurityException | InterruptedException e) {
+        JOptionPane.showMessageDialog(null, "Error updating PO file: " + e.getMessage(), "File Error",
+                JOptionPane.ERROR_MESSAGE);
+        return false;
+    }
+}
 
     // 生成唯一的 PO ID
     private int generatePOID() {

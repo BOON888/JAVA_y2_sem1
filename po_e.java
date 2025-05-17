@@ -494,76 +494,33 @@ public class po_e extends JPanel {
     }
 
     // Custom renderer for the Actions column
-    private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
-        private final JButton viewButton = new JButton("View");
-        private final JButton deleteButton = new JButton("Delete");
+private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
+    private final JButton viewButton = new JButton("View");
+    private final JButton deleteButton = new JButton("Delete");
 
-        public ActionButtonsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            add(viewButton);
-            add(deleteButton);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-                viewButton.setForeground(table.getSelectionForeground());
-                deleteButton.setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-                viewButton.setForeground(table.getForeground());
-                deleteButton.setForeground(Color.RED); // Make delete button red
-            }
-            return this;
-        }
+    public ActionButtonsRenderer() {
+        setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        add(viewButton);
+        add(deleteButton);
     }
 
-    // Custom editor for the Actions column
-    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
-        private final JPanel panel;
-        private final JButton viewButton;
-        private final JButton deleteButton;
-        private int currentRow;
-        private final JTable table;
-        private final po_e poPanel;
-
-        public ActionButtonsEditor(JTable table, po_e poPanel) {
-            this.table = table;
-            this.poPanel = poPanel;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            viewButton = new JButton("View");
-            deleteButton = new JButton("Delete");
-            deleteButton.setForeground(Color.RED); // Make delete button red
-            viewButton.addActionListener(this);
-            deleteButton.addActionListener(this);
-            panel.add(viewButton);
-            panel.add(deleteButton);
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                  boolean hasFocus, int row, int column) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JButton viewBtn = new JButton("View");
+        JButton deleteBtn = new JButton("Delete");
+        panel.add(viewBtn);
+        panel.add(deleteBtn);
+        panel.setOpaque(true);
+        if (isSelected) {
+            panel.setBackground(table.getSelectionBackground());
+        } else {
+            panel.setBackground(table.getBackground());
         }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            currentRow = row;
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null; // No meaningful value to return
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (e.getSource() == viewButton) {
-                poPanel.viewPO(table.convertRowIndexToModel(currentRow));
-            } else if (e.getSource() == deleteButton) {
-                poPanel.deletePO(table.convertRowIndexToModel(currentRow));
-            }
-            fireEditingStopped(); // Make sure editing stops
-        }
+        return panel;
     }
+}
 
     public void updateSelectedPO() {
     if (currentPoIdForEdit == null) {
@@ -615,6 +572,48 @@ public class po_e extends JPanel {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
+    }
+
+    // --- ActionButtonsEditor class for Actions column ---
+    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        private final JButton viewButton = new JButton("View");
+        private final JButton deleteButton = new JButton("Delete");
+        private int row = -1;
+        private JTable table;
+        private po_e parentPanel;
+
+        public ActionButtonsEditor(JTable table, po_e parentPanel) {
+            this.table = table;
+            this.parentPanel = parentPanel;
+            panel.add(viewButton);
+            panel.add(deleteButton);
+
+            viewButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.viewPO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+
+            deleteButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.deletePO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            this.row = row;
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
+        }
     }
 
     // Method to set the logged-in user (you'd call this after successful login)
@@ -686,8 +685,8 @@ private void loadApprovedPrData() {
     }
 }
 
-private List<String> getApprovedPrIds() {
-    loadApprovedPrData();
-    return new ArrayList<>(approvedPrMap.keySet());
-}
+    private List<String> getApprovedPrIds() {
+        loadApprovedPrData();
+        return new ArrayList<>(approvedPrMap.keySet());
+    }
 }

@@ -13,7 +13,6 @@ public class finance_c {
     public static final String STATUS_VERIFIED = "Verified";
     public static final String STATUS_NOT_VERIFIED = "Not Verified";
     public static final String STATUS_PAID = "Paid";
-    public static final String STATUS_UNPAID = "Unpaid";
     
     private List<FinanceRecord> financeRecords = new ArrayList<>();
 
@@ -40,9 +39,18 @@ public class finance_c {
         }
     }
 
+    public boolean isPoPaid(String poId) {
+        for (FinanceRecord record : financeRecords) {
+            if (record.getPoId().equals(poId)) {
+                return record.getPaymentStatus().equals(STATUS_PAID);
+            }
+        }
+        return false;
+    }
+
     public List<String> loadPoIds() {
         List<String> poIds = new ArrayList<>();
-        poIds.add("");
+        poIds.add(""); // Add empty option
         
         try (BufferedReader br = new BufferedReader(new FileReader(PO_FILE))) {
             String line;
@@ -50,7 +58,7 @@ public class finance_c {
                 String[] data = line.split("\\|");
                 if (data.length > 0) {
                     String poId = data[0].trim();
-                    if (!poId.isEmpty()) {
+                    if (!poId.isEmpty() && !isPoPaid(poId)) {
                         poIds.add(poId);
                     }
                 }
@@ -148,7 +156,6 @@ public class finance_c {
             this.verifiedBy = verifiedBy;
         }
 
-        // Getters and setters
         public String getFinanceId() { return financeId; }
         public String getPoId() { return poId; }
         public String getApprovalStatus() { return approvalStatus; }

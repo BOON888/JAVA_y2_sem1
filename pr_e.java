@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.LinkedHashSet;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Map;
 
 public class pr_e extends JPanel {
 
@@ -45,6 +47,7 @@ public class pr_e extends JPanel {
     protected TableRowSorter<DefaultTableModel> sorter; // Sorter for prTable
     protected List<String[]> fullPrData; // To store all data read from file
     protected pr_e_c controller;
+    private Map<String, String> itemToSupplierMap = new HashMap<>();
 
     public pr_e() {
         setLayout(new BorderLayout(0, 5)); // Main layout with vertical gap
@@ -102,28 +105,39 @@ public class pr_e extends JPanel {
 
         // --- Load items and suppliers from items.txt ---
         List<String> itemIDs = new ArrayList<>();
-        List<String> supplierIDs = new ArrayList<>();
+        Set<String> supplierIDs = new LinkedHashSet<>();
+        itemToSupplierMap.clear();
+
         try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 3) {
                     itemIDs.add(parts[0] + " - " + parts[1]); // e.g. "2001 - uncle A item 2"
-                    supplierIDs.add(parts[2]); // supplier_id
+                    supplierIDs.add(parts[2]);
+                    itemToSupplierMap.put(parts[0], parts[2]); // Map item_id -> supplier_id
                 }
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
         }
-        // Remove duplicates from supplierIDs
-        Set<String> uniqueSuppliers = new LinkedHashSet<>(supplierIDs);
 
         // --- ComboBoxes ---
         JLabel itemLabel = new JLabel("Item ID:");
         itemIDComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
+        itemIDComboBox.addActionListener(e -> {
+            Object selected = itemIDComboBox.getSelectedItem();
+            if (selected != null) {
+                String itemId = selected.toString().split(" - ")[0].trim();
+                String supplierId = itemToSupplierMap.get(itemId);
+                if (supplierId != null) {
+                    supplierIDComboBox.setSelectedItem(supplierId);
+                }
+            }
+        });
 
         JLabel supplierLabel = new JLabel("Supplier ID:");
-        supplierIDComboBox = new JComboBox<>(uniqueSuppliers.toArray(new String[0]));
+        supplierIDComboBox = new JComboBox<>(supplierIDs.toArray(new String[0]));
 
         JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);

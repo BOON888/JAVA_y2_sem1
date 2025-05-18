@@ -216,10 +216,16 @@ public class pr_e_c {
     private boolean deleteRecordFromFile(String filename, String idToDelete) {
         File inputFile = new File(filename);
         File tempFile;
-        try { tempFile = File.createTempFile("temp_del_", ".txt", inputFile.getParentFile()); }
-        catch (IOException e) { System.err.println("Could not create temporary file: " + e); return false; }
+        try {
+            tempFile = File.createTempFile("temp_del_", ".txt", inputFile.getParentFile());
+        } catch (IOException e) {
+            System.err.println("Could not create temporary file: " + e);
+            return false;
+        }
 
+        boolean deleted = false;
         boolean found = false;
+
         if (!inputFile.exists()) return false;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
@@ -229,21 +235,49 @@ public class pr_e_c {
                 if (line.trim().isEmpty()) continue;
                 String[] data = line.split("\\|");
                 if (data.length > 0 && data[0].equals(idToDelete)) {
-                    found = true; // Mark as found, do not write to temp file
+                    found = true;
+                    if (data.length >= 7 && data[6].equalsIgnoreCase("Approved")) {
+                        // Do not allow deletion if status is Approved
+                        JOptionPane.showMessageDialog(view,
+                            "Cannot delete PR ID " + idToDelete + " because it is already Approved.",
+                            "Delete Not Allowed", JOptionPane.WARNING_MESSAGE);
+                        writer.write(line); // Keep the original line
+                        writer.newLine();
+                    } else {
+                        deleted = true;
+                        // Do not write this line (delete)
+                    }
                 } else {
-                    writer.write(line); writer.newLine();
+                    writer.write(line);
+                    writer.newLine();
                 }
             }
-        } catch (IOException e) { System.err.println("Error processing file for deletion: " + e); if(tempFile.exists()) tempFile.delete(); return false; }
+        } catch (IOException e) {
+            System.err.println("Error processing file for deletion: " + e);
+            if (tempFile.exists()) tempFile.delete();
+            return false;
+        }
 
-        if (!found) { if(tempFile.exists()) tempFile.delete(); return false; } // ID wasn't in file
+        if (!found) {
+            if (tempFile.exists()) tempFile.delete();
+            return false;
+        }
 
-        // Replace original file
         try {
-            if (!inputFile.delete()) { System.gc(); Thread.sleep(100); if (!inputFile.delete()) throw new IOException("Could not delete original: " + inputFile.getName()); }
-            if (!tempFile.renameTo(inputFile)) { /* Add copy fallback if needed */ throw new IOException("Could not rename temp file"); }
-            return true; // Success
-        } catch (IOException | SecurityException | InterruptedException e) { System.err.println("Error replacing file: " + e); return false; }
+            if (!inputFile.delete()) {
+                System.gc();
+                Thread.sleep(100);
+                if (!inputFile.delete())
+                    throw new IOException("Could not delete original: " + inputFile.getName());
+            }
+            if (!tempFile.renameTo(inputFile)) {
+                throw new IOException("Could not rename temp file");
+            }
+            return deleted;
+        } catch (IOException | SecurityException | InterruptedException e) {
+            System.err.println("Error replacing file: " + e);
+            return false;
+        }
     }
 
     // Generic method to update a record identified by the first field (ID)

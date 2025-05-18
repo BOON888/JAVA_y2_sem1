@@ -214,18 +214,39 @@ public class pr_e extends JPanel {
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Allow editing for Item ID, Supplier ID, Quantity, Required Date, Raised By
-                // Columns 0 (PR ID) and 6 (Status) are NOT editable.
-                return column > 0 && column < 6;
+                // Only allow editing for Item ID, Supplier ID, Quantity, Required Date
+                // Columns 0 (PR ID), 5 (Raised By), and 6 (Status) are NOT editable.
+                return column == 1 || column == 2 || column == 3 || column == 4;
             }
         };
         prDetailsTable = new JTable(detailsTableModel);
         prDetailsTable.setRowHeight(30);
         prDetailsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         prDetailsTable.setFont(new Font("Arial", Font.PLAIN, 12));
-        // Add ComboBox for Raised By column if needed for editing
-        // TableColumn raisedByCol = prDetailsTable.getColumnModel().getColumn(5);
-        // raisedByCol.setCellEditor(new DefaultCellEditor(new JComboBox<>(new String[]{"1002", "1001"}))); // Use IDs for editing
+
+        // --- Load items and suppliers from items.txt for dropdowns ---
+        java.util.List<String> itemIDs = new java.util.ArrayList<>();
+        java.util.List<String> supplierIDs = new java.util.ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 3) {
+                    itemIDs.add(parts[0]); // Just the item ID
+                    supplierIDs.add(parts[2]); // supplier_id
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
+        }
+        // Remove duplicates from supplierIDs
+        java.util.Set<String> uniqueSuppliers = new java.util.LinkedHashSet<>(supplierIDs);
+
+        // --- Set ComboBox editors for Item ID and Supplier ID columns ---
+        JComboBox<String> itemComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
+        JComboBox<String> supplierComboBox = new JComboBox<>(uniqueSuppliers.toArray(new String[0]));
+        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(itemComboBox));      // Item ID
+        prDetailsTable.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(supplierComboBox));  // Supplier ID
 
         JScrollPane detailsScrollPane = new JScrollPane(prDetailsTable);
         detailsScrollPane.setBorder(BorderFactory.createTitledBorder("Selected PR Details (Editable)"));

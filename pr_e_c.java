@@ -173,17 +173,26 @@ public class pr_e_c {
         String updatedSupplierId = view.detailsTableModel.getValueAt(0, 2).toString();
         String updatedQuantity = view.detailsTableModel.getValueAt(0, 3).toString();
         String updatedRequiredDate = view.detailsTableModel.getValueAt(0, 4).toString();
-        String updatedRaisedByRole = view.detailsTableModel.getValueAt(0, 5).toString(); // It's the Role Name in the details table
+        String updatedRaisedByDisplay = view.detailsTableModel.getValueAt(0, 5).toString(); // e.g. "fish - 1012"
+        // Extract user ID from "username - userID"
+        String updatedRaisedById;
+        if (updatedRaisedByDisplay.contains(" - ")) {
+            updatedRaisedById = updatedRaisedByDisplay.substring(updatedRaisedByDisplay.lastIndexOf(" - ") + 3).trim();
+        } else if (updatedRaisedByDisplay.startsWith("Unknown (") && updatedRaisedByDisplay.endsWith(")")) {
+            // fallback for "Unknown (1012)"
+            updatedRaisedById = updatedRaisedByDisplay.substring(9, updatedRaisedByDisplay.length() - 1).trim();
+        } else {
+            updatedRaisedById = updatedRaisedByDisplay.trim();
+        }
         String updatedStatus = view.detailsTableModel.getValueAt(0, 6).toString(); // Status shouldn't change here usually
 
         // --- Optional: Add validation for the updated data ---
-        if (updatedItemId.isEmpty() || updatedSupplierId.isEmpty() || updatedQuantity.isEmpty() || updatedRequiredDate.isEmpty() || updatedRaisedByRole.isEmpty()) {
+        if (updatedItemId.isEmpty() || updatedSupplierId.isEmpty() || updatedQuantity.isEmpty() || updatedRequiredDate.isEmpty() || updatedRaisedByDisplay.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Updated fields cannot be empty.", "Validation Error", JOptionPane.ERROR_MESSAGE); return;
         }
         try { int qty = Integer.parseInt(updatedQuantity); if(qty <= 0) throw new NumberFormatException(); }
         catch (NumberFormatException e) { JOptionPane.showMessageDialog(view, "Updated quantity must be a positive number.", "Validation Error", JOptionPane.ERROR_MESSAGE); return; }
         if (!updatedRequiredDate.matches("\\d{2}-\\d{2}-\\d{4}")) { JOptionPane.showMessageDialog(view, "Updated date must be DD-MM-YYYY.", "Validation Error", JOptionPane.ERROR_MESSAGE); return; }
-        String updatedRaisedById = mapRoleToID(updatedRaisedByRole);
         // --- End Validation ---
 
         // Create the updated line string based on file format

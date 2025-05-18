@@ -45,15 +45,18 @@ public class pr_e_c {
         String supplierID = view.supplierIDField.getText().trim();
         String quantityStr = view.quantityField.getText().trim();
         String requiredDate = view.requiredDateField.getText().trim();
-        String raisedByRole = (String) view.raisedByDropdown.getSelectedItem();
-    
-        System.out.println("Item ID: " + itemID);
-        System.out.println("Supplier ID: " + supplierID);
-        System.out.println("Quantity Str: " + quantityStr);
-        System.out.println("Required Date: " + requiredDate);
-        System.out.println("Raised By Role: " + raisedByRole);
-    
-        if (itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || requiredDate.isEmpty() || raisedByRole == null) {
+
+        // Get logged-in user info
+        String raisedByID = login_c.currentUserId;
+        String raisedByRole = login_c.currentRole;
+
+        // Only allow if role is sm or am
+        if (!(raisedByRole.equalsIgnoreCase("sm") || raisedByRole.equalsIgnoreCase("am"))) {
+            JOptionPane.showMessageDialog(view, "Only Sales Manager or Administrator can raise a PR.", "Permission Denied", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || requiredDate.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Please fill all fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Validation failed: Empty fields.");
             return;
@@ -66,8 +69,7 @@ public class pr_e_c {
         if (!requiredDate.matches("\\d{2}-\\d{2}-\\d{4}")) { JOptionPane.showMessageDialog(view, "Required Date must be DD-MM-YYYY.", "Input Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Validation failed: Invalid date format.");
             return; }
-    
-        String raisedByID = mapRoleToID(raisedByRole);
+
         String status = "Pending";
         int prID = generatePrID();
         System.out.println("Generated PR ID: " + prID);
@@ -76,24 +78,23 @@ public class pr_e_c {
             return; }
         String formattedPrID = String.format("%04d", prID);
         String newPR = String.join("|", formattedPrID, itemID, supplierID, String.valueOf(quantity), requiredDate, raisedByID, status);
-    
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(PR_FILE, true))) {
             System.out.println("Writing to file: " + newPR);
             writer.write(newPR);
             writer.newLine();
             JOptionPane.showMessageDialog(view, "Purchase Requisition (PR ID: " + formattedPrID + ") added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             view.itemIDField.setText(""); view.supplierIDField.setText(""); view.quantityField.setText("");
-            view.requiredDateField.setText(""); view.raisedByDropdown.setSelectedIndex(0);
+            view.requiredDateField.setText("");
             loadPRData();
             view.showCard(pr_e.PR_LIST_CARD);
             System.out.println("PR added successfully.");
-    
+
         } catch (IOException e) {
             JOptionPane.showMessageDialog(view, "Error saving PR: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Error saving PR: " + e.getMessage());
         }
     }
-
 
     public void searchPR() {
         String searchId = view.searchField.getText().trim();
@@ -270,7 +271,6 @@ public class pr_e_c {
             return true; // Success
         } catch (IOException | SecurityException | InterruptedException e) { System.err.println("Error replacing file: " + e); return false; }
     }
-
 
     // Map role name to user ID (adjust IDs as needed)
     private String mapRoleToID(String role) {

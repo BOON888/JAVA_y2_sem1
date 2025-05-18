@@ -27,7 +27,6 @@ public class pr_e extends JPanel {
 
     // --- PR Info Components ---
     protected JTextField itemIDField, supplierIDField, quantityField, requiredDateField;
-    protected JComboBox<String> raisedByDropdown;
     protected JButton addPrButton;
 
     // --- PR List Components ---
@@ -107,10 +106,7 @@ public class pr_e extends JPanel {
         quantityField = new JTextField(15);
 
         JLabel dateLabel = new JLabel("Required Date (DD-MM-YYYY):");
-        requiredDateField = new JTextField(15); // Consider JDatePicker
-
-        JLabel raisedByLabel = new JLabel("Raised By:");
-        raisedByDropdown = new JComboBox<>(new String[]{"Sales Manager", "Administrator"}); // Add roles as needed
+        requiredDateField = new JTextField(15);
 
         // Layout components using GridBagLayout
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; infoPanel.add(itemLabel, gbc);
@@ -125,14 +121,11 @@ public class pr_e extends JPanel {
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0; infoPanel.add(dateLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 1.0; infoPanel.add(requiredDateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0; infoPanel.add(raisedByLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 4; gbc.weightx = 1.0; infoPanel.add(raisedByDropdown, gbc);
-
         // Add PR Button
         addPrButton = new JButton("Add Purchase Requisition");
         addPrButton.setFont(new Font("Arial", Font.BOLD, 14));
         addPrButton.addActionListener(e -> controller.addPR());
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; // Change to row 4
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.weightx = 0;
@@ -140,7 +133,7 @@ public class pr_e extends JPanel {
         infoPanel.add(addPrButton, gbc);
 
         // Filler to push components up
-        gbc.gridy = 6; gbc.weighty = 1.0;
+        gbc.gridy = 5; gbc.weighty = 1.0; // Change to row 5
         infoPanel.add(new JLabel(""), gbc);
 
         cardPanel.add(infoPanel, PR_INFO_CARD); // Add this panel to the CardLayout

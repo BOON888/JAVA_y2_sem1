@@ -14,6 +14,10 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.table.TableCellEditor;
 import javax.swing.RowFilter;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class pr_e extends JPanel {
 
@@ -26,7 +30,8 @@ public class pr_e extends JPanel {
     private JPanel topButtonPanel; // Panel for PR Info/PR List buttons
 
     // --- PR Info Components ---
-    protected JTextField itemIDField, supplierIDField, quantityField, requiredDateField;
+    protected JComboBox<String> itemIDComboBox, supplierIDComboBox; // NEW: Use JComboBox
+    protected JTextField quantityField, requiredDateField;
     protected JButton addPrButton;
 
     // --- PR List Components ---
@@ -95,12 +100,30 @@ public class pr_e extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Labels and Fields for PR Info
+        // --- Load items and suppliers from items.txt ---
+        List<String> itemIDs = new ArrayList<>();
+        List<String> supplierIDs = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 3) {
+                    itemIDs.add(parts[0] + " - " + parts[1]); // e.g. "2001 - uncle A item 2"
+                    supplierIDs.add(parts[2]); // supplier_id
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
+        }
+        // Remove duplicates from supplierIDs
+        Set<String> uniqueSuppliers = new LinkedHashSet<>(supplierIDs);
+
+        // --- ComboBoxes ---
         JLabel itemLabel = new JLabel("Item ID:");
-        itemIDField = new JTextField(15);
+        itemIDComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
 
         JLabel supplierLabel = new JLabel("Supplier ID:");
-        supplierIDField = new JTextField(15);
+        supplierIDComboBox = new JComboBox<>(uniqueSuppliers.toArray(new String[0]));
 
         JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);
@@ -110,10 +133,10 @@ public class pr_e extends JPanel {
 
         // Layout components using GridBagLayout
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; infoPanel.add(itemLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDField, gbc);
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; infoPanel.add(supplierLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDField, gbc);
+        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0; infoPanel.add(quantityLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; infoPanel.add(quantityField, gbc);
@@ -125,18 +148,18 @@ public class pr_e extends JPanel {
         addPrButton = new JButton("Add Purchase Requisition");
         addPrButton.setFont(new Font("Arial", Font.BOLD, 14));
         addPrButton.addActionListener(e -> controller.addPR());
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; // Change to row 4
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.weightx = 0;
-        gbc.insets = new Insets(20, 8, 8, 8); // More top margin for button
+        gbc.insets = new Insets(20, 8, 8, 8);
         infoPanel.add(addPrButton, gbc);
 
         // Filler to push components up
-        gbc.gridy = 5; gbc.weighty = 1.0; // Change to row 5
+        gbc.gridy = 5; gbc.weighty = 1.0;
         infoPanel.add(new JLabel(""), gbc);
 
-        cardPanel.add(infoPanel, PR_INFO_CARD); // Add this panel to the CardLayout
+        cardPanel.add(infoPanel, PR_INFO_CARD);
     }
 
     // =================================================

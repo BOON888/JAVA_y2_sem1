@@ -41,8 +41,9 @@ public class pr_e_c {
 
     public void addPR() {
         System.out.println("Attempting to add PR...");
-        String itemID = view.itemIDField.getText().trim();
-        String supplierID = view.supplierIDField.getText().trim();
+        // Get selected item and supplier IDs from ComboBoxes
+        String itemID = view.itemIDComboBox.getSelectedItem().toString().split(" - ")[0].trim();
+        String supplierID = view.supplierIDComboBox.getSelectedItem().toString().trim();
         String quantityStr = view.quantityField.getText().trim();
         String requiredDate = view.requiredDateField.getText().trim();
 
@@ -84,7 +85,7 @@ public class pr_e_c {
             writer.write(newPR);
             writer.newLine();
             JOptionPane.showMessageDialog(view, "Purchase Requisition (PR ID: " + formattedPrID + ") added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            view.itemIDField.setText(""); view.supplierIDField.setText(""); view.quantityField.setText("");
+            view.itemIDComboBox.setSelectedIndex(-1); view.supplierIDComboBox.setSelectedIndex(-1); view.quantityField.setText("");
             view.requiredDateField.setText("");
             loadPRData();
             view.showCard(pr_e.PR_LIST_CARD);

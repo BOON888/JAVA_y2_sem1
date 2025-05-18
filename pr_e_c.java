@@ -282,13 +282,21 @@ public class pr_e_c {
         };
     }
 
-    // Map user ID back to Role Name (example, might be needed for display)
+    // Map user ID to "username - userID" by looking up users.txt
     private String mapIDToRole(String userID) {
-        return switch (userID) {
-            case "1002" -> "Sales Manager";
-            case "1001" -> "Administrator";
-            default -> "Unknown (" + userID + ")";
-        };
+        File file = new File("TXT/users.txt");
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 2 && parts[0].trim().equals(userID.trim())) {
+                    return parts[1].trim() + " - " + userID.trim();
+                }
+            }
+        } catch (IOException e) {
+            // Optionally log error
+        }
+        return "Unknown (" + userID + ")";
     }
 
     // Generate next PR ID (ensure it's 4 digits starting from 5001)

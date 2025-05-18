@@ -11,3 +11,6 @@
 1011|shawn|password|im|1234567890|shawn@gmail.com
 1012|fish|password|am|0165298626|fish@gmail.com
 1013|dog|password|sm|1234567890|dog@gmail.com
+1014|cat|password|am|0165298626|cat@gmail.com
+1015|Mok|password|sm|1234567890|Mok@gmail.com
+1016|Hamza|password|sm|1234567890|Hamza@gmail.com

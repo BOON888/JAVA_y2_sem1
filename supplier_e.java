@@ -1,15 +1,15 @@
-
 import java.awt.*;
 import java.io.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.*;
 
 public class supplier_e extends JPanel {
 
     private JTextField nameField, contactField, emailField, addressField, itemField;
     private JTable supplierTable;
     private DefaultTableModel tableModel;
-    private static final String FILE_NAME = "TXT/suppliers.txt"; // Your folder path
+    private static final String FILE_NAME = "TXT/suppliers.txt";
     private int currentId = 3001;
 
     public supplier_e() {
@@ -30,26 +30,73 @@ public class supplier_e extends JPanel {
         loadSuppliers();
     }
 
+    private boolean isValidEmail(String email) {
+        String emailRegex = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+        return email != null && email.matches(emailRegex);
+    }
+
+    private boolean isValidContactNumber(String contact) {
+        return contact != null && contact.matches("^\\d{10,11}$");
+    }
+
     private JPanel createInputPanel() {
         JPanel inputPanel = new JPanel(new GridLayout(6, 2, 5, 5));
         inputPanel.setPreferredSize(new Dimension(280, 180));
         inputPanel.setBorder(BorderFactory.createTitledBorder("Supplier Info"));
 
         nameField = new JTextField(15);
+        
+        // Contact Number Field with strict validation
         contactField = new JTextField(15);
+        contactField.setDocument(new PlainDocument() {
+            @Override
+            public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+                if (str == null) return;
+                
+                String digitsOnly = str.replaceAll("[^0-9]", "");
+                if (digitsOnly.isEmpty()) {
+                    Toolkit.getDefaultToolkit().beep();
+                    return;
+                }
+                
+                if ((getLength() + digitsOnly.length()) > 11) {
+                    Toolkit.getDefaultToolkit().beep();
+                    return;
+                }
+                
+                super.insertString(offset, digitsOnly, attr);
+            }
+        });
+
+        // Email Field with validation
         emailField = new JTextField(15);
+        emailField.setInputVerifier(new InputVerifier() {
+            @Override
+            public boolean verify(JComponent input) {
+                String text = ((JTextField) input).getText().trim();
+                if (!text.isEmpty() && !isValidEmail(text)) {
+                    JOptionPane.showMessageDialog(input, 
+                        "Invalid email format!\nExample: name@example.com", 
+                        "Invalid Email", 
+                        JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+                return true;
+            }
+        });
+
         addressField = new JTextField(15);
         itemField = new JTextField(15);
 
         inputPanel.add(new JLabel("Name:"));
         inputPanel.add(nameField);
-        inputPanel.add(new JLabel("Contact No.:"));
+        inputPanel.add(new JLabel("Contact Number (10-11 digits):"));
         inputPanel.add(contactField);
         inputPanel.add(new JLabel("Email:"));
         inputPanel.add(emailField);
         inputPanel.add(new JLabel("Address:"));
         inputPanel.add(addressField);
-        inputPanel.add(new JLabel("Item Name:"));
+        inputPanel.add(new JLabel("Supply Category:"));
         inputPanel.add(itemField);
 
         JButton addButton = new JButton("Add");
@@ -64,8 +111,15 @@ public class supplier_e extends JPanel {
         tablePanel.setPreferredSize(new Dimension(750, 220));
         tablePanel.setBorder(BorderFactory.createTitledBorder("Supplier List"));
 
-        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Item Name"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Item Name"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table cells non-editable
+            }
+        };
+        
         supplierTable = new JTable(tableModel);
+        supplierTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tablePanel.add(new JScrollPane(supplierTable), BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
@@ -88,11 +142,31 @@ public class supplier_e extends JPanel {
         String address = addressField.getText().trim();
         String item = itemField.getText().trim();
 
+        // Validate all required fields
         if (name.isEmpty() || contact.isEmpty() || email.isEmpty() || address.isEmpty() || item.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields must be filled", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "All fields marked with * are required", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Validate contact number format
+        if (!isValidContactNumber(contact)) {
+            JOptionPane.showMessageDialog(this, 
+                "Contact number must be 10-11 digits only\nNo spaces or special characters allowed", 
+                "Invalid Contact", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Validate email format
+        if (!isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, 
+                "Invalid email format!\nMust contain @ and valid domain\nExample: name@example.com", 
+                "Invalid Email", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Add to table if all validations pass
         tableModel.addRow(new Object[]{currentId++, name, contact, email, address, item});
         saveSuppliers();
         clearInputFields();
@@ -101,8 +175,15 @@ public class supplier_e extends JPanel {
     private void deleteSupplier() {
         int selectedRow = supplierTable.getSelectedRow();
         if (selectedRow != -1) {
-            tableModel.removeRow(selectedRow);
-            saveSuppliers();
+            int confirm = JOptionPane.showConfirmDialog(this, 
+                "Are you sure you want to delete this supplier?", 
+                "Confirm Delete", 
+                JOptionPane.YES_NO_OPTION);
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                tableModel.removeRow(selectedRow);
+                saveSuppliers();
+            }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a supplier to delete", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -117,11 +198,32 @@ public class supplier_e extends JPanel {
             String address = tableModel.getValueAt(selectedRow, 4).toString();
             String item = tableModel.getValueAt(selectedRow, 5).toString();
 
-            supplier_v dialog = new supplier_v((JFrame) SwingUtilities.getWindowAncestor(this), name, contact, email, address, item);
+            // Create edit dialog with current values
+            supplier_v dialog = new supplier_v((JFrame) SwingUtilities.getWindowAncestor(this), 
+                name, contact, email, address, item);
             dialog.setVisible(true);
 
             if (dialog.isSaved()) {
                 String[] newData = dialog.getEditedData();
+                
+                // Validate edited data before saving
+                if (!isValidContactNumber(newData[1])) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Contact number must be 10-11 digits", 
+                        "Invalid Contact", 
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                if (!isValidEmail(newData[2])) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Invalid email format", 
+                        "Invalid Email", 
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                // Update table if validations pass
                 tableModel.setValueAt(newData[0], selectedRow, 1);
                 tableModel.setValueAt(newData[1], selectedRow, 2);
                 tableModel.setValueAt(newData[2], selectedRow, 3);
@@ -146,21 +248,33 @@ public class supplier_e extends JPanel {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 writer.println(
-                        tableModel.getValueAt(i, 0) + "|"
-                        + tableModel.getValueAt(i, 1) + "|"
-                        + tableModel.getValueAt(i, 2) + "|"
-                        + tableModel.getValueAt(i, 3) + "|"
-                        + tableModel.getValueAt(i, 4) + "|"
-                        + tableModel.getValueAt(i, 5));
+                    tableModel.getValueAt(i, 0) + "|" +
+                    tableModel.getValueAt(i, 1) + "|" +
+                    tableModel.getValueAt(i, 2) + "|" +
+                    tableModel.getValueAt(i, 3) + "|" +
+                    tableModel.getValueAt(i, 4) + "|" +
+                    tableModel.getValueAt(i, 5));
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving suppliers: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Error saving suppliers: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void loadSuppliers() {
         File file = new File(FILE_NAME);
         if (!file.exists()) {
+            try {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, 
+                    "Error creating suppliers file: " + e.getMessage(), 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
             return;
         }
 
@@ -169,13 +283,20 @@ public class supplier_e extends JPanel {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length == 6) {
-                    int id = Integer.parseInt(parts[0]);
-                    tableModel.addRow(parts);
-                    currentId = Math.max(currentId, id + 1);
+                    try {
+                        int id = Integer.parseInt(parts[0]);
+                        tableModel.addRow(parts);
+                        currentId = Math.max(currentId, id + 1);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid ID format in suppliers file: " + parts[0]);
+                    }
                 }
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error loading suppliers: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Error loading suppliers: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 }

@@ -1,5 +1,5 @@
 1001|DUN TZI|password|am|0165298626|duntzi@gmail.com
-1002|juin heng|password|sm|1234567890|juinheng@gmail.com
+1002|jun heng|password|sm|1234567890|juinheng@gmail.com
 1003|boon|password|im|1234567890|boon@gmail.com
 1004|lee juin|password|fm|1234567890|leejuin@gmail.com
 1005|eden|password|pm|1234567890|eden@gmail.com

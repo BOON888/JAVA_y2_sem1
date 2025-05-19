@@ -1,15 +1,13 @@
-
 import java.awt.*;
 import java.io.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.PlainDocument;
+import javax.swing.text.*;
 
 public class sales_e extends JPanel {
 
@@ -24,31 +22,26 @@ public class sales_e extends JPanel {
     private List<String[]> itemsList = new ArrayList<>();
     private List<String> salesPersons = new ArrayList<>();
     private int nextSalesId = 4000;
+    private static final DateTimeFormatter DISPLAY_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     public sales_e() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(1000, 500));
 
-        // Initialize UI
         initializeUI();
-
-        // Load data
         loadData();
     }
 
     private void initializeUI() {
-        // Main panel
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Title panel
         JPanel titlePanel = new JPanel();
         JLabel titleLabel = new JLabel("Sales Management System");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titlePanel.add(titleLabel);
         mainPanel.add(titlePanel, BorderLayout.NORTH);
 
-        // Center panel
         JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 10));
         centerPanel.add(createSalesInfoPanel());
         centerPanel.add(createSalesListPanel());
@@ -83,7 +76,6 @@ public class sales_e extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("Sales Info"));
         panel.setLayout(new GridLayout(5, 2, 5, 5));
 
-        // Item Name
         panel.add(new JLabel("Item Name:"));
         itemNameField = new JTextField();
         itemNameField.setEditable(false);
@@ -95,19 +87,16 @@ public class sales_e extends JPanel {
         itemPanel.add(selectItemButton, BorderLayout.EAST);
         panel.add(itemPanel);
 
-        // Quantity
         panel.add(new JLabel("Quantity:"));
         quantityField = new JTextField();
         quantityField.setDocument(new IntegerDocument());
         panel.add(quantityField);
 
-        // Sales Person
         panel.add(new JLabel("Sales Person:"));
         salesPersonCombo = new JComboBox<>();
         salesPersonCombo.setModel(new DefaultComboBoxModel<>(salesPersons.toArray(new String[0])));
         panel.add(salesPersonCombo);
 
-        // Add button
         panel.add(new JLabel());
         JButton addButton = new JButton("Add");
         addButton.addActionListener(e -> addSale());
@@ -158,14 +147,12 @@ public class sales_e extends JPanel {
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 7; // Only Actions column is editable
+                return column == 7;
             }
         };
 
         salesTable = new JTable(tableModel);
         salesTable.setRowHeight(30);
-
-        // Set up button renderer and editor
         salesTable.getColumn("Actions").setCellRenderer(new ButtonRenderer());
         salesTable.getColumn("Actions").setCellEditor(new ButtonEditor(new JCheckBox()));
 
@@ -209,7 +196,7 @@ public class sales_e extends JPanel {
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
                 if (data.length >= 4 && ("sm".equalsIgnoreCase(data[3]) || "am".equalsIgnoreCase(data[3]))) {
-                    salesPersons.add(data[1]); // Add sales manager name
+                    salesPersons.add(data[1]);
                 }
             }
             salesPersonCombo.setModel(new DefaultComboBoxModel<>(salesPersons.toArray(new String[0])));
@@ -238,17 +225,17 @@ public class sales_e extends JPanel {
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
                 if (data.length >= 6) {
+                    LocalDate date = LocalDate.parse(data[2]); // Parse date from file
                     Sales sale = new Sales(
                             data[0],
                             data[1],
-                            LocalDate.parse(data[2]),
+                            date,
                             Integer.parseInt(data[3]),
                             Integer.parseInt(data[4]),
                             data[5]
                     );
                     salesList.add(sale);
 
-                    // Find item name for display
                     String itemName = "Unknown";
                     for (String[] item : itemsList) {
                         if (item[0].equals(data[1])) {
@@ -261,7 +248,7 @@ public class sales_e extends JPanel {
                         sale.getSalesId(),
                         sale.getItemId(),
                         itemName,
-                        sale.getSalesDate(),
+                        date.format(DISPLAY_FORMAT), // Format date for display
                         sale.getQuantitySold(),
                         sale.getRemainingStock(),
                         sale.getSalesPerson(),
@@ -278,7 +265,7 @@ public class sales_e extends JPanel {
         File file = new File(SALES_FILE);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (Sales sale : salesList) {
-                writer.write(sale.toString() + "\n");
+                writer.write(sale.toString() + "\n"); // Uses LocalDate's default toString() format
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving sales: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -287,7 +274,6 @@ public class sales_e extends JPanel {
 
     private void addSale() {
         try {
-            // Validate inputs
             if (itemNameField.getText().isEmpty()) {
                 throw new Exception("Please select an item");
             }
@@ -306,7 +292,6 @@ public class sales_e extends JPanel {
                 throw new Exception("Please select a sales person");
             }
 
-            // Find selected item
             String selectedItemName = itemNameField.getText();
             String itemId = "";
             int currentStock = 0;
@@ -327,10 +312,8 @@ public class sales_e extends JPanel {
                 throw new Exception("Not enough stock available");
             }
 
-            // Calculate remaining stock
             int remainingStock = currentStock - quantitySold;
 
-            // Create new sale
             Sales newSale = new Sales(
                     String.valueOf(nextSalesId++),
                     itemId,
@@ -340,25 +323,21 @@ public class sales_e extends JPanel {
                     salesPerson
             );
 
-            // Update data
             salesList.add(newSale);
             tableModel.addRow(new Object[]{
                 newSale.getSalesId(),
                 newSale.getItemId(),
                 selectedItemName,
-                newSale.getSalesDate(),
+                newSale.getSalesDate().format(DISPLAY_FORMAT), // Format date for display
                 newSale.getQuantitySold(),
                 newSale.getRemainingStock(),
                 newSale.getSalesPerson(),
                 "View/Delete"
             });
 
-            // Update item stock in items.txt
             updateItemStock(itemId, quantitySold);
-
-            // Save and refresh
             saveSales();
-            loadItems(); // Refresh items list
+            loadItems();
             clearInputFields();
 
         } catch (NumberFormatException e) {
@@ -372,7 +351,6 @@ public class sales_e extends JPanel {
         try {
             List<String> updatedItems = new ArrayList<>();
 
-            // Read all items
             try (BufferedReader reader = new BufferedReader(new FileReader(ITEMS_FILE))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -385,7 +363,6 @@ public class sales_e extends JPanel {
                 }
             }
 
-            // Write back updated items
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(ITEMS_FILE))) {
                 for (String item : updatedItems) {
                     writer.write(item + "\n");
@@ -402,9 +379,33 @@ public class sales_e extends JPanel {
         quantityField.setText("");
     }
 
-    // Helper classes for table buttons and input validation
-    private static class ButtonRenderer extends JButton implements TableCellRenderer {
+    private void viewSale(int row) {
+        Sales sale = salesList.get(row);
+        JOptionPane.showMessageDialog(this,
+                "Sales ID: " + sale.getSalesId() + "\n"
+                + "Item ID: " + sale.getItemId() + "\n"
+                + "Date: " + sale.getSalesDate().format(DISPLAY_FORMAT) + "\n"
+                + "Quantity Sold: " + sale.getQuantitySold() + "\n"
+                + "Remaining Stock: " + sale.getRemainingStock() + "\n"
+                + "Sales Person: " + sale.getSalesPerson(),
+                "Sale Details", JOptionPane.INFORMATION_MESSAGE);
+    }
 
+    private void deleteSale(int row) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Delete this sale?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            Sales sale = salesList.get(row);
+            updateItemStock(sale.getItemId(), -sale.getQuantitySold());
+            salesList.remove(row);
+            tableModel.removeRow(row);
+            saveSales();
+            loadItems();
+        }
+    }
+
+    private static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
         }
@@ -418,7 +419,6 @@ public class sales_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
-
         private JButton button;
 
         public ButtonEditor(JCheckBox checkBox) {
@@ -452,39 +452,7 @@ public class sales_e extends JPanel {
         }
     }
 
-    private void viewSale(int row) {
-        Sales sale = salesList.get(row);
-        JOptionPane.showMessageDialog(this,
-                "Sales ID: " + sale.getSalesId() + "\n"
-                + "Item ID: " + sale.getItemId() + "\n"
-                + "Date: " + sale.getSalesDate() + "\n"
-                + "Quantity Sold: " + sale.getQuantitySold() + "\n"
-                + "Remaining Stock: " + sale.getRemainingStock() + "\n"
-                + "Sales Person: " + sale.getSalesPerson(),
-                "Sale Details", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void deleteSale(int row) {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Delete this sale?", "Confirm", JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            Sales sale = salesList.get(row);
-
-            // Restore stock
-            updateItemStock(sale.getItemId(), -sale.getQuantitySold());
-
-            // Remove from list
-            salesList.remove(row);
-            tableModel.removeRow(row);
-            saveSales();
-            loadItems(); // Refresh items
-        }
-    }
-
-    // Document filter for numeric input only
     private static class IntegerDocument extends PlainDocument {
-
         @Override
         public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
             if (str == null) {

@@ -29,7 +29,7 @@ public class pm extends JPanel {
         // ===== BOTTOM BUTTON PANEL =====
         JPanel bottomPanel = new JPanel(new GridLayout(1, 7)); // 6 buttons + 1 Exit button
         String[] buttonNames = {"Item List", "Supplier List", "PR List", "PO"};
-        String[] classNames = {"item_v", "supplier_v", "pr_pm", "po_e"};
+        String[] classNames = {"item_v", "supplier_list", "pr_pm", "po_e"};
 
         for (int i = 0; i < buttonNames.length; i++) {
             JButton button = new JButton(buttonNames[i]);

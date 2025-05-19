@@ -28,7 +28,7 @@ public class supplier_v extends JDialog {
         addressField = new JTextField(address);
         panel.add(addressField);
 
-        panel.add(new JLabel("Item Name:"));
+        panel.add(new JLabel("Supply Category:"));
         itemField = new JTextField(item);
         panel.add(itemField);
 

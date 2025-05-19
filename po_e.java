@@ -10,7 +10,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
@@ -48,7 +50,7 @@ public class po_e extends JPanel {
         return userList;
     }
 
-    // --- PO List Components (Unchanged - Order By Remains) ---
+     // --- PO List Components (Unchanged - Order By Remains) ---
     private JTable poTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
@@ -57,10 +59,13 @@ public class po_e extends JPanel {
     private JPanel detailsPanel; // Panel to show details below table
     private JTextField editPrIdField, editItemIdField, editSupplierIdField, editQuantityField, editOrderDateField;
     private JComboBox<String> editOrderByDropdown, editReceivedByDropdown, editApprovedByDropdown, editStatusDropdown;
+    private JTextField editStatusField;
+    private JLabel detailStatusLabel;
     private JLabel detailPoIdLabel; // PO ID will remain a label
     private List<String[]> fullPoData;
     private String currentPoIdForEdit = null; // Track the PO ID being edited
-    private JTextField editOrderByField;
+    private JLabel detailOrderByLabel;
+    private JComboBox<String> prIDDropdown;
     // ---------------------------------------------------------
 
     public po_e() {
@@ -94,25 +99,47 @@ public class po_e extends JPanel {
                 new JLabel("Approved By:")
         };
 
-        prIDField = new JTextField(15);
+        prIDDropdown = new JComboBox<>(getApprovedPrIds().toArray(new String[0]));
+        prIDDropdown.setEditable(false);
+        prIDDropdown.addActionListener(e -> {
+            String selectedPrId = (String) prIDDropdown.getSelectedItem();
+            if (selectedPrId != null && approvedPrMap.containsKey(selectedPrId)) {
+                String[] data = approvedPrMap.get(selectedPrId);
+                itemIDField.setText(data[0]);      // item_id
+                supplierIDField.setText(data[1]);  // supplier_id
+            }
+        });
         itemIDField = new JTextField(15);
         supplierIDField = new JTextField(15);
         quantityField = new JTextField(15);
         orderDateField = new JTextField(15);
 
-        JTextField[] fields = { prIDField, itemIDField, supplierIDField, quantityField, orderDateField };
+        JTextField[] fields = { itemIDField, supplierIDField, quantityField, orderDateField };
 
-        for (int i = 0; i < 5; i++) {
-            labels[i].setFont(new Font("Arial", Font.BOLD, 16));
+        // Add PR ID label and dropdown
+        labels[0].setFont(new Font("Arial", Font.BOLD, 16));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.weightx = 0;
+        panel.add(labels[0], gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        panel.add(prIDDropdown, gbc);
+
+        // Then add remaining fields
+        for (int j = 1; j < 5; j++) {
+            labels[j].setFont(new Font("Arial", Font.BOLD, 16));
             gbc.gridx = 0;
-            gbc.gridy = i;
+            gbc.gridy = j;
             gbc.anchor = GridBagConstraints.WEST;
             gbc.weightx = 0;
-            panel.add(labels[i], gbc);
+            panel.add(labels[j], gbc);
 
             gbc.gridx = 1;
             gbc.weightx = 1.0;
-            panel.add(fields[i], gbc);
+            panel.add(fields[j - 1], gbc); 
         }
 
         receivedByDropdown = new JComboBox<>(getUsersByRole("im").toArray(new String[0]));
@@ -143,7 +170,7 @@ public class po_e extends JPanel {
         addButton = new JButton("Add Purchase Order");
         addButton.setFont(new Font("Arial", Font.BOLD, 16));
         addButton.addActionListener(e -> {
-            String prID = prIDField.getText().trim();
+            String prID = (String) prIDDropdown.getSelectedItem();
             String itemID = itemIDField.getText().trim();
             String supplierID = supplierIDField.getText().trim();
             String quantityStr = quantityField.getText().trim();
@@ -222,7 +249,7 @@ public class po_e extends JPanel {
         poTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN); // Let Actions column take remaining space
 
         JScrollPane scrollPane = new JScrollPane(poTable);
-        tablePanel.add(scrollPane, BorderLayout.CENTER); // Add table scroll pane to center
+        tablePanel.add(scrollPane, BorderLayout.CENTER); // Add table scroll pane to center 
         //--------------------------------------------
 
         // --- Details Panel (Below Table - Order By Remains) ---
@@ -254,23 +281,28 @@ public class po_e extends JPanel {
 
         // --- Received By Dropdown (Inventory Manager) ---
         List<String> imUsers = getUsersByRole("im");
-        
         editReceivedByDropdown = new JComboBox<>(imUsers.toArray(new String[0]));
         editReceivedByDropdown.setSelectedIndex(-1);
 
         // --- Approved By Dropdown (Financial Manager) ---
         List<String> fmUsers = getUsersByRole("fm");
-       
         editApprovedByDropdown = new JComboBox<>(fmUsers.toArray(new String[0]));
         editApprovedByDropdown.setSelectedIndex(-1);
-
-         editOrderByField = createDetailTextField();
-        editOrderByField.setEditable(false); // 禁止用户编辑
+        
+        // --- Order By Label (View Only) ---
+        detailOrderByLabel = new JLabel("---");
+        detailOrderByLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        detailOrderByLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // --- Status Dropdown ---
         String[] statusOptions = {"Pending", "Approved", "Rejected"};
         editStatusDropdown = new JComboBox<>(statusOptions);
         editStatusDropdown.setSelectedIndex(-1);
+
+        // --- Status Field (View Only) ---
+        detailStatusLabel = new JLabel("---");
+        detailStatusLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        detailStatusLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         // Add Labels and Editable Fields to detailsPanel (Order By Remains)
         addDetailRow(detailsPanel, gbc, 0, "PO ID:", detailPoIdLabel);
@@ -279,11 +311,10 @@ public class po_e extends JPanel {
         addDetailRow(detailsPanel, gbc, 3, "Supplier ID:", editSupplierIdField);
         addDetailRow(detailsPanel, gbc, 4, "Quantity:", editQuantityField);
         addDetailRow(detailsPanel, gbc, 5, "Order Date:", editOrderDateField);
-        addDetailRow(detailsPanel, gbc, 6, "Order By:", editOrderByField);
+        addDetailRow(detailsPanel, gbc, 6, "Order By:", detailOrderByLabel);
         addDetailRow(detailsPanel, gbc, 7, "Received By:", editReceivedByDropdown);
         addDetailRow(detailsPanel, gbc, 8, "Approved By:", editApprovedByDropdown);
-        addDetailRow(detailsPanel, gbc, 9, "Status:", editStatusDropdown);
-
+        addDetailRow(detailsPanel, gbc, 9, "Status:", detailStatusLabel); 
         tablePanel.add(detailsPanel, BorderLayout.SOUTH); // Add details panel below table
         //--------------------------------------------
 
@@ -371,10 +402,10 @@ public class po_e extends JPanel {
         editSupplierIdField.setText(getSafeData(data, 3));
         editQuantityField.setText(getSafeData(data, 4));
         editOrderDateField.setText(getSafeData(data, 5));
-        editOrderByField.setText(getUserDisplay(getSafeData(data, 6)));
+        detailOrderByLabel.setText(getUserDisplay(getSafeData(data, 6))); 
         selectDropdownByUserId(editReceivedByDropdown, getSafeData(data, 7));
         selectDropdownByUserId(editApprovedByDropdown, getSafeData(data, 8));
-        editStatusDropdown.setSelectedItem(getSafeData(data, 9));
+        detailStatusLabel.setText(getSafeData(data, 9));
     }
 
     // Helper method to safely get data from array, returning "N/A" if index is bad
@@ -396,8 +427,8 @@ public class po_e extends JPanel {
         editOrderDateField.setText("");
         editReceivedByDropdown.setSelectedIndex(-1);
         editApprovedByDropdown.setSelectedIndex(-1);
-        editOrderByField.setText("");
-        editStatusDropdown.setSelectedIndex(-1);
+        detailOrderByLabel.setText("---"); 
+        detailStatusLabel.setText("---"); 
         currentPoIdForEdit = null;
     }
 
@@ -463,105 +494,75 @@ public class po_e extends JPanel {
     }
 
     // Custom renderer for the Actions column
-    private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
-        private final JButton viewButton = new JButton("View");
-        private final JButton deleteButton = new JButton("Delete");
+private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
+    private final JButton viewButton = new JButton("View");
+    private final JButton deleteButton = new JButton("Delete");
 
-        public ActionButtonsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            add(viewButton);
-            add(deleteButton);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-                viewButton.setForeground(table.getSelectionForeground());
-                deleteButton.setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-                viewButton.setForeground(table.getForeground());
-                deleteButton.setForeground(Color.RED); // Make delete button red
-            }
-            return this;
-        }
+    public ActionButtonsRenderer() {
+        setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        add(viewButton);
+        add(deleteButton);
     }
 
-    // Custom editor for the Actions column
-    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
-        private final JPanel panel;
-        private final JButton viewButton;
-        private final JButton deleteButton;
-        private int currentRow;
-        private final JTable table;
-        private final po_e poPanel;
-
-        public ActionButtonsEditor(JTable table, po_e poPanel) {
-            this.table = table;
-            this.poPanel = poPanel;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            viewButton = new JButton("View");
-            deleteButton = new JButton("Delete");
-            deleteButton.setForeground(Color.RED); // Make delete button red
-            viewButton.addActionListener(this);
-            deleteButton.addActionListener(this);
-            panel.add(viewButton);
-            panel.add(deleteButton);
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                  boolean hasFocus, int row, int column) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JButton viewBtn = new JButton("View");
+        JButton deleteBtn = new JButton("Delete");
+        panel.add(viewBtn);
+        panel.add(deleteBtn);
+        panel.setOpaque(true);
+        if (isSelected) {
+            panel.setBackground(table.getSelectionBackground());
+        } else {
+            panel.setBackground(table.getBackground());
         }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            currentRow = row;
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null; // No meaningful value to return
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (e.getSource() == viewButton) {
-                poPanel.viewPO(table.convertRowIndexToModel(currentRow));
-            } else if (e.getSource() == deleteButton) {
-                poPanel.deletePO(table.convertRowIndexToModel(currentRow));
-            }
-            fireEditingStopped(); // Make sure editing stops
-        }
+        return panel;
     }
+}
 
     public void updateSelectedPO() {
-        if (currentPoIdForEdit == null) {
-            JOptionPane.showMessageDialog(this, "Please view a Purchase Order before updating.", "No PO Selected", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String updatedPrId = editPrIdField.getText();
-        String updatedItemId = editItemIdField.getText();
-        String updatedSupplierId = editSupplierIdField.getText();
-        String updatedQuantity = editQuantityField.getText();
-        String updatedOrderDate = editOrderDateField.getText();
-        String updatedOrderBy = extractUserId(editOrderByField.getText());
-        String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
-        String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
-        String updatedStatus = (String) editStatusDropdown.getSelectedItem();
-
-        String[] updatedData = {currentPoIdForEdit, updatedPrId, updatedItemId, updatedSupplierId, updatedQuantity,
-                               updatedOrderDate, updatedOrderBy, updatedReceivedBy, updatedApprovedBy, updatedStatus};
-
-        if (poController.updatePurchaseOrder(currentPoIdForEdit, updatedData)) {
-            JOptionPane.showMessageDialog(this, "Purchase Order " + currentPoIdForEdit + " updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            loadPurchaseOrders();
-            clearDetailsPanel();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to update Purchase Order " + currentPoIdForEdit + ".", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    if (currentPoIdForEdit == null) {
+        JOptionPane.showMessageDialog(this, "Please view a Purchase Order before updating.", "No PO Selected", JOptionPane.WARNING_MESSAGE);
+        return;
     }
 
+    String updatedPrId = editPrIdField.getText();
+    String updatedItemId = editItemIdField.getText();
+    String updatedSupplierId = editSupplierIdField.getText();
+    String updatedQuantity = quantityField.getText();                  
+    updatedQuantity = editQuantityField.getText(); // Using editQuantityField
+
+    String updatedOrderDate = editOrderDateField.getText();
+    String updatedOrderBy = extractUserId(detailOrderByLabel.getText());
+    String updatedReceivedBy = mapRoleToID((String) editReceivedByDropdown.getSelectedItem());
+    String updatedApprovedBy = mapRoleToID((String) editApprovedByDropdown.getSelectedItem());
+
+    String originalStatus = "N/A"; // Default value if the PO is not found or status is missing
+    if (currentPoIdForEdit != null && fullPoData != null) {
+        for (String[] poRecord : fullPoData) {
+            // Assuming poRecord[0] is the PO ID and poRecord[9] is the Status
+            if (poRecord.length > 9 && poRecord[0].equals(currentPoIdForEdit)) {
+                originalStatus = getSafeData(poRecord, 9);
+                break;
+            }
+        }
+    }
+    String updatedStatus = originalStatus; // Use the retrieved original status
+    // --- END OF CHANGE ---
+
+    String[] updatedData = {currentPoIdForEdit, updatedPrId, updatedItemId, updatedSupplierId, updatedQuantity,
+                            updatedOrderDate, updatedOrderBy, updatedReceivedBy, updatedApprovedBy, updatedStatus};
+
+    if (poController.updatePurchaseOrder(currentPoIdForEdit, updatedData)) {
+        JOptionPane.showMessageDialog(this, "Purchase Order " + currentPoIdForEdit + " updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        loadPurchaseOrders();
+        clearDetailsPanel();
+    } else {
+        JOptionPane.showMessageDialog(this, "Failed to update Purchase Order " + currentPoIdForEdit + ".", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Purchase Order Management");
@@ -571,6 +572,48 @@ public class po_e extends JPanel {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
+    }
+
+    // --- ActionButtonsEditor class for Actions column ---
+    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        private final JButton viewButton = new JButton("View");
+        private final JButton deleteButton = new JButton("Delete");
+        private int row = -1;
+        private JTable table;
+        private po_e parentPanel;
+
+        public ActionButtonsEditor(JTable table, po_e parentPanel) {
+            this.table = table;
+            this.parentPanel = parentPanel;
+            panel.add(viewButton);
+            panel.add(deleteButton);
+
+            viewButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.viewPO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+
+            deleteButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.deletePO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            this.row = row;
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
+        }
     }
 
     // Method to set the logged-in user (you'd call this after successful login)
@@ -607,9 +650,43 @@ public class po_e extends JPanel {
     return userId; // fallback: return just the ID if not found
 }
 
-private String extractUserId(String display) {
-    if (display == null) return "";
-    String[] parts = display.split(" - ");
-    return parts.length > 0 ? parts[0] : display;
+    private String extractUserId(String display) {
+        if (display == null) return "";
+        String[] parts = display.split(" - ");
+        return parts.length > 0 ? parts[0] : display;
+    }
+
+    private Map<String, String[]> approvedPrMap = new HashMap<>();
+
+private void loadApprovedPrData() {
+    approvedPrMap.clear();
+    File file = new File("TXT/pr.txt");
+    if (!file.exists()) {
+        System.out.println("pr.txt file not found.");
+        return;
+    }
+
+    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+            String[] parts = line.split("\\|");
+            if (parts.length >= 7) {
+                String prId = parts[0];
+                String itemId = parts[1];
+                String supplierId = parts[2];
+                String status = parts[6];
+                if ("Approved".equalsIgnoreCase(status)) {
+                    approvedPrMap.put(prId, new String[]{itemId, supplierId});
+                }
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
 }
+
+    private List<String> getApprovedPrIds() {
+        loadApprovedPrData();
+        return new ArrayList<>(approvedPrMap.keySet());
+    }
 }

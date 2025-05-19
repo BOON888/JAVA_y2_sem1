@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class finance_e extends JPanel {
     private finance_c financeController;
@@ -46,6 +47,10 @@ public class finance_e extends JPanel {
     private JTextField amountUpdateField;
     private JTextField verifiedByUpdateField;
     private JButton updateButton;
+
+    // Regular expressions for validation
+    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{2}/\\d{2}/\\d{4}$");
+    private static final Pattern AMOUNT_PATTERN = Pattern.compile("^\\d+(\\.\\d{1,2})?$");
 
     public finance_e() {
         this.financeController = new finance_c();
@@ -92,17 +97,21 @@ public class finance_e extends JPanel {
         financeIdInfoField.setText(financeController.generateNewFinanceId());
 
         JLabel poIdLabel = new JLabel("PO ID:");
-        poIdComboBox = new JComboBox<>();
-        List<String> poIds = financeController.loadPoIds();
-        for (String poId : poIds) {
-            poIdComboBox.addItem(poId);
-        }
+        poIdComboBox = new JComboBox<String>() {
+            @Override
+            public void setSelectedItem(Object anObject) {
+                if (!financeController.isPoPaid((String) anObject)) {
+                    super.setSelectedItem(anObject);
+                }
+            }
+        };
+        refreshPoIdsComboBox();
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusInfoField = new JTextField(finance_c.STATUS_PAID, 15);
+        paymentStatusInfoField = new JTextField(finance_c.STATUS_PAID);
         paymentStatusInfoField.setEditable(false);
 
-        JLabel paymentDateLabel = new JLabel("Payment Date:");
+        JLabel paymentDateLabel = new JLabel("Payment Date (dd/mm/yyyy):");
         paymentDateInfoField = new JTextField(15);
 
         JLabel amountLabel = new JLabel("Amount:");
@@ -150,12 +159,36 @@ public class finance_e extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String financeId = financeIdInfoField.getText().trim();
                 String poId = (String) poIdComboBox.getSelectedItem();
-                String paymentStatus = finance_c.STATUS_PAID;
+                String paymentStatus = paymentStatusInfoField.getText().trim();
                 String paymentDate = paymentDateInfoField.getText().trim();
                 String amountText = amountInfoField.getText().trim();
 
+                // Validation checks
                 if (financeId.isEmpty() || poId == null || poId.isEmpty() || paymentDate.isEmpty() || amountText.isEmpty()) {
                     JOptionPane.showMessageDialog(finance_e.this, "Please fill in all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (financeController.isPoPaid(poId)) {
+                    JOptionPane.showMessageDialog(finance_e.this, 
+                        "This PO has already been paid and cannot be selected.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate payment date format (dd/mm/yyyy)
+                if (!DATE_PATTERN.matcher(paymentDate).matches()) {
+                    JOptionPane.showMessageDialog(finance_e.this, 
+                        "Invalid payment date format. Please use dd/mm/yyyy format.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate amount is numeric
+                if (!AMOUNT_PATTERN.matcher(amountText).matches()) {
+                    JOptionPane.showMessageDialog(finance_e.this, 
+                        "Invalid amount. Please enter a valid numeric value (e.g. 100 or 100.50).", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
@@ -191,11 +224,28 @@ public class finance_e extends JPanel {
         return panel;
     }
 
+    private void refreshPoIdsComboBox() {
+        poIdComboBox.removeAllItems();
+        List<String> poIds = financeController.loadPoIds();
+        for (String poId : poIds) {
+            poIdComboBox.addItem(poId);
+        }
+    }
+
     private JPanel createFinanceListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(new EmptyBorder(20, 20, 0, 20));
 
-        financeListTableTop = new JTable(financeListTableModelTop);
+        financeListTableTop = new JTable(financeListTableModelTop) {
+            @Override
+            public void changeSelection(int row, int column, boolean toggle, boolean extend) {
+                super.changeSelection(row, column, toggle, extend);
+                if (convertColumnIndexToModel(column) == 1) {
+                    ButtonPanel buttonPanel = (ButtonPanel) getValueAt(row, column);
+                    buttonPanel.viewButton.doClick();
+                }
+            }
+        };
         financeListTableTop.getColumn("Actions").setCellRenderer(new ButtonRenderer());
         financeListTableTop.getColumn("Actions").setCellEditor(new ButtonEditor(financeListTableTop));
         financeListScrollPaneTop = new JScrollPane(financeListTableTop);
@@ -239,7 +289,7 @@ public class finance_e extends JPanel {
         approvalStatusUpdateCombo = new JComboBox<>(new String[]{finance_c.STATUS_PENDING, finance_c.STATUS_VERIFIED, finance_c.STATUS_NOT_VERIFIED});
 
         JLabel paymentStatusLabel = new JLabel("Payment Status:");
-        paymentStatusUpdateField = new JTextField(finance_c.STATUS_PAID, 15);
+        paymentStatusUpdateField = new JTextField(finance_c.STATUS_PAID);
         paymentStatusUpdateField.setEditable(false);
 
         JLabel paymentDateLabel = new JLabel("Payment Date:");
@@ -318,7 +368,6 @@ public class finance_e extends JPanel {
                                 JOptionPane.YES_NO_OPTION);
                         if (confirm == JOptionPane.YES_OPTION) {
                             record.setApprovalStatus((String) approvalStatusUpdateCombo.getSelectedItem());
-                            record.setPaymentStatus(finance_c.STATUS_PAID);
                             record.setVerifiedBy(Integer.parseInt(login_c.currentUserId));
                             
                             financeController.updateFinanceRecord(record);
@@ -356,6 +405,7 @@ public class finance_e extends JPanel {
                 new ButtonPanel(record)
             });
         }
+        refreshPoIdsComboBox();
     }
 
     private void populateUpdateFields(finance_c.FinanceRecord record) {
@@ -379,7 +429,7 @@ public class finance_e extends JPanel {
     }
 
     private class ButtonPanel extends JPanel {
-        private JButton viewButton;
+        public JButton viewButton;
         private finance_c.FinanceRecord record;
 
         public ButtonPanel(finance_c.FinanceRecord record) {
@@ -421,7 +471,7 @@ public class finance_e extends JPanel {
         private ButtonPanel panel;
 
         public ButtonEditor(JTable table) {
-            super(new JTextField());
+            super(new JCheckBox());
             setClickCountToStart(1);
         }
 
@@ -436,7 +486,7 @@ public class finance_e extends JPanel {
 
         @Override
         public Object getCellEditorValue() {
-            return null;
+            return panel;
         }
 
         @Override
@@ -447,6 +497,11 @@ public class finance_e extends JPanel {
         @Override
         public boolean shouldSelectCell(java.util.EventObject anEvent) {
             return false;
+        }
+
+        @Override
+        public boolean stopCellEditing() {
+            return super.stopCellEditing();
         }
     }
 

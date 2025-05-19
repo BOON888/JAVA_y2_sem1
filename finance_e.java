@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class finance_e extends JPanel {
+
     private finance_c financeController;
     private JTabbedPane tabbedPane;
     private JPanel financeInfoPanel;
@@ -49,7 +51,7 @@ public class finance_e extends JPanel {
     private JButton updateButton;
 
     // Regular expressions for validation
-    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{2}/\\d{2}/\\d{4}$");
+    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{2}-\\d{2}-\\d{4}$");
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("^\\d+(\\.\\d{1,2})?$");
 
     public finance_e() {
@@ -111,7 +113,7 @@ public class finance_e extends JPanel {
         paymentStatusInfoField = new JTextField(finance_c.STATUS_PAID);
         paymentStatusInfoField.setEditable(false);
 
-        JLabel paymentDateLabel = new JLabel("Payment Date (dd/mm/yyyy):");
+        JLabel paymentDateLabel = new JLabel("Payment Date (dd-mm-yyyy):");
         paymentDateInfoField = new JTextField(15);
 
         JLabel amountLabel = new JLabel("Amount:");
@@ -170,25 +172,25 @@ public class finance_e extends JPanel {
                 }
 
                 if (financeController.isPoPaid(poId)) {
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        "This PO has already been paid and cannot be selected.", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(finance_e.this,
+                            "This PO has already been paid and cannot be selected.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 // Validate payment date format (dd/mm/yyyy)
                 if (!DATE_PATTERN.matcher(paymentDate).matches()) {
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        "Invalid payment date format. Please use dd/mm/yyyy format.", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(finance_e.this,
+                            "Invalid payment date format. Please use dd/mm/yyyy format.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 // Validate amount is numeric
                 if (!AMOUNT_PATTERN.matcher(amountText).matches()) {
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        "Invalid amount. Please enter a valid numeric value (e.g. 100 or 100.50).", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(finance_e.this,
+                            "Invalid amount. Please enter a valid numeric value (e.g. 100 or 100.50).",
+                            "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
@@ -201,22 +203,22 @@ public class finance_e extends JPanel {
                         amountText,
                         Integer.parseInt(login_c.currentUserId)
                 );
-                
+
                 financeController.addFinanceRecord(newRecord);
                 populateFinanceListTableTop();
-                
+
                 financeIdInfoField.setText(financeController.generateNewFinanceId());
                 poIdComboBox.setSelectedIndex(0);
                 paymentDateInfoField.setText("");
                 amountInfoField.setText("");
-                
-                JOptionPane.showMessageDialog(finance_e.this, 
-                    "Finance record added successfully!\n" +
-                    "Finance ID: " + financeId + "\n" +
-                    "PO ID: " + poId + "\n" +
-                    "Amount: " + amountText + "\n" +
-                    "Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")", 
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                JOptionPane.showMessageDialog(finance_e.this,
+                        "Finance record added successfully!\n"
+                        + "Finance ID: " + financeId + "\n"
+                        + "PO ID: " + poId + "\n"
+                        + "Amount: " + amountText + "\n"
+                        + "Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -369,27 +371,27 @@ public class finance_e extends JPanel {
                         if (confirm == JOptionPane.YES_OPTION) {
                             record.setApprovalStatus((String) approvalStatusUpdateCombo.getSelectedItem());
                             record.setVerifiedBy(Integer.parseInt(login_c.currentUserId));
-                            
+
                             financeController.updateFinanceRecord(record);
-                            
-                            JOptionPane.showMessageDialog(finance_e.this, 
-                                "Finance updated successfully! Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")", 
-                                "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                            JOptionPane.showMessageDialog(finance_e.this,
+                                    "Finance updated successfully! Verified By: " + login_c.currentUsername + " (ID: " + login_c.currentUserId + ")",
+                                    "Success", JOptionPane.INFORMATION_MESSAGE);
                             clearUpdateFields();
                             populateFinanceListTableTop();
                         } else {
-                            JOptionPane.showMessageDialog(finance_e.this, 
-                                "Update cancelled.", 
-                                "Cancelled", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(finance_e.this,
+                                    "Update cancelled.",
+                                    "Cancelled", JOptionPane.INFORMATION_MESSAGE);
                         }
                         break;
                     }
                 }
                 clearUpdateFields();
                 if (!found) {
-                    JOptionPane.showMessageDialog(finance_e.this, 
-                        "Could not find finance record.", 
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(finance_e.this,
+                            "Could not find finance record.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -429,6 +431,7 @@ public class finance_e extends JPanel {
     }
 
     private class ButtonPanel extends JPanel {
+
         public JButton viewButton;
         private finance_c.FinanceRecord record;
 
@@ -458,6 +461,7 @@ public class finance_e extends JPanel {
     }
 
     private class ButtonRenderer extends DefaultTableCellRenderer {
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             if (value instanceof ButtonPanel) {
@@ -468,6 +472,7 @@ public class finance_e extends JPanel {
     }
 
     private class ButtonEditor extends DefaultCellEditor {
+
         private ButtonPanel panel;
 
         public ButtonEditor(JTable table) {
@@ -509,12 +514,12 @@ public class finance_e extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Finance Management");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            
+
             // For testing, set some dummy user info
             login_c.currentUserId = "7001";
             login_c.currentUsername = "finance_user";
             login_c.currentRole = "Finance";
-            
+
             frame.getContentPane().add(new finance_e());
             frame.pack();
             frame.setLocationRelativeTo(null);

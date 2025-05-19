@@ -34,6 +34,7 @@ public class pr_e extends JPanel {
     // --- PR Info Components ---
     protected JComboBox<String> itemIDComboBox, supplierIDComboBox; // NEW: Use JComboBox
     protected JTextField quantityField, requiredDateField;
+    protected JTextField supplierIDField;
     protected JButton addPrButton;
 
     // --- PR List Components ---
@@ -130,14 +131,13 @@ public class pr_e extends JPanel {
             if (selected != null) {
                 String itemId = selected.toString().split(" - ")[0].trim();
                 String supplierId = itemToSupplierMap.get(itemId);
-                if (supplierId != null) {
-                    supplierIDComboBox.setSelectedItem(supplierId);
-                }
+                supplierIDField.setText(supplierId != null ? supplierId : "");
             }
         });
 
         JLabel supplierLabel = new JLabel("Supplier ID:");
-        supplierIDComboBox = new JComboBox<>(supplierIDs.toArray(new String[0]));
+        supplierIDField = new JTextField(15);
+        supplierIDField.setEditable(false); // Make it read-only
 
         JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);
@@ -150,7 +150,7 @@ public class pr_e extends JPanel {
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; infoPanel.add(supplierLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDComboBox, gbc);
+        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0; infoPanel.add(quantityLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; infoPanel.add(quantityField, gbc);
@@ -228,9 +228,9 @@ public class pr_e extends JPanel {
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Only allow editing for Item ID, Supplier ID, Quantity, Required Date
-                // Columns 0 (PR ID), 5 (Raised By), and 6 (Status) are NOT editable.
-                return column == 1 || column == 2 || column == 3 || column == 4;
+                // Only allow editing for Item ID, Quantity, Required Date
+                // Supplier ID (column 2) is NOT editable
+                return column == 1 || column == 3 || column == 4;
             }
         };
         prDetailsTable = new JTable(detailsTableModel);
@@ -256,11 +256,47 @@ public class pr_e extends JPanel {
         // Remove duplicates from supplierIDs
         java.util.Set<String> uniqueSuppliers = new java.util.LinkedHashSet<>(supplierIDs);
 
-        // --- Set ComboBox editors for Item ID and Supplier ID columns ---
+        // --- Set ComboBox editor for Item ID column ---
         JComboBox<String> itemComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
-        JComboBox<String> supplierComboBox = new JComboBox<>(uniqueSuppliers.toArray(new String[0]));
-        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(itemComboBox));      // Item ID
-        prDetailsTable.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(supplierComboBox));  // Supplier ID
+        DefaultCellEditor itemEditor = new DefaultCellEditor(itemComboBox);
+        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item ID
+
+        // Add CellEditorListener to update Supplier ID after editing Item ID
+        itemEditor.addCellEditorListener(new javax.swing.event.CellEditorListener() {
+            @Override
+            public void editingStopped(javax.swing.event.ChangeEvent e) {
+                int row = prDetailsTable.getSelectedRow();
+                if (row != -1) {
+                    String itemId = prDetailsTable.getValueAt(row, 1).toString();
+                    String supplierId = itemToSupplierMap.get(itemId);
+                    if (supplierId != null) {
+                        prDetailsTable.setValueAt(supplierId, row, 2);
+                    }
+                }
+            }
+            @Override
+            public void editingCanceled(javax.swing.event.ChangeEvent e) {}
+        });
+
+        // TableModelListener for auto-filling Supplier ID
+        prDetailsTable.getModel().addTableModelListener(e -> {
+            int row = e.getFirstRow();
+            int column = e.getColumn();
+            if (column == 1 && row != -1) { // Item ID changed
+                String itemId = prDetailsTable.getValueAt(row, 1).toString();
+                String supplierId = itemToSupplierMap.get(itemId);
+                if (supplierId != null) {
+                    // Temporarily remove listener to avoid recursion
+                    javax.swing.event.TableModelListener[] listeners = ((DefaultTableModel) prDetailsTable.getModel()).getTableModelListeners();
+                    for (javax.swing.event.TableModelListener l : listeners)
+                        prDetailsTable.getModel().removeTableModelListener(l);
+                    prDetailsTable.setValueAt(supplierId, row, 2);
+                    // Re-add listeners
+                    for (javax.swing.event.TableModelListener l : listeners)
+                        prDetailsTable.getModel().addTableModelListener(l);
+                }
+            }
+        });
 
         JScrollPane detailsScrollPane = new JScrollPane(prDetailsTable);
         detailsScrollPane.setBorder(BorderFactory.createTitledBorder("Selected PR Details (Editable)"));

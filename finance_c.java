@@ -39,6 +39,16 @@ public class finance_c {
         }
     }
 
+    public void deleteFinanceRecord(String financeId) {
+        for (int i = 0; i < financeRecords.size(); i++) {
+            if (financeRecords.get(i).getFinanceId().equals(financeId)) {
+                financeRecords.remove(i);
+                saveFinanceData();
+                break;
+            }
+        }
+    }
+
     public boolean isPoPaid(String poId) {
         for (FinanceRecord record : financeRecords) {
             if (record.getPoId().equals(poId)) {

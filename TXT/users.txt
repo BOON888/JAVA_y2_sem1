@@ -14,3 +14,4 @@
 1014|cat|password|am|0165298626|cat@gmail.com
 1015|Mok|password|sm|1234567890|Mok@gmail.com
 1016|Hamza|password|sm|1234567890|Hamza@gmail.com
+1017|dun tzi ooi|123456Ab|am|1234567890|duntziooi@gmail.com

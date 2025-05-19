@@ -2,4 +2,4 @@
 2002|uncle B item 2|3002|category B|20.0|200
 2003|uncle A item 3|3001|category A|30.0|100
 2004|uncle B item 3|3002|category B|40.0|200
-2005|uncle B item 3|3004|category C|40.0|200
+2006|uncle C item 2|3003|category C|15.0|100

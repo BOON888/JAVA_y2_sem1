@@ -1,2 +1,3 @@
-3001|uncle A|1234567890|uncleA@gmail.com|uncle A address|uncle A item 1
-3002|uncle B|1234567890|uncleB@gmail.com|uncle B address|uncle B item 1
+3001|uncle A|1234567890|uncleA@gmail.com|uncle A address|A category
+3002|uncle B|1234567890|uncleB@gmail.com|uncle B address|B category
+3003|uncle C|1234567890|uncleC@gmail.com|uncle C address|C category

@@ -14,6 +14,12 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.table.TableCellEditor;
 import javax.swing.RowFilter;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Map;
 
 public class pr_e extends JPanel {
 
@@ -26,8 +32,9 @@ public class pr_e extends JPanel {
     private JPanel topButtonPanel; // Panel for PR Info/PR List buttons
 
     // --- PR Info Components ---
-    protected JTextField itemIDField, supplierIDField, quantityField, requiredDateField;
-    protected JComboBox<String> raisedByDropdown;
+    protected JComboBox<String> itemIDComboBox, supplierIDComboBox; // NEW: Use JComboBox
+    protected JTextField quantityField, requiredDateField;
+    protected JTextField supplierIDField;
     protected JButton addPrButton;
 
     // --- PR List Components ---
@@ -41,6 +48,7 @@ public class pr_e extends JPanel {
     protected TableRowSorter<DefaultTableModel> sorter; // Sorter for prTable
     protected List<String[]> fullPrData; // To store all data read from file
     protected pr_e_c controller;
+    private Map<String, String> itemToSupplierMap = new HashMap<>();
 
     public pr_e() {
         setLayout(new BorderLayout(0, 5)); // Main layout with vertical gap
@@ -96,25 +104,50 @@ public class pr_e extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Labels and Fields for PR Info
+        // --- Load items and suppliers from items.txt ---
+        List<String> itemIDs = new ArrayList<>();
+        Set<String> supplierIDs = new LinkedHashSet<>();
+        itemToSupplierMap.clear();
+
+        try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 3) {
+                    itemIDs.add(parts[0] + " - " + parts[1]); // e.g. "2001 - uncle A item 2"
+                    supplierIDs.add(parts[2]);
+                    itemToSupplierMap.put(parts[0], parts[2]); // Map item_id -> supplier_id
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
+        }
+
+        // --- ComboBoxes ---
         JLabel itemLabel = new JLabel("Item ID:");
-        itemIDField = new JTextField(15);
+        itemIDComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
+        itemIDComboBox.addActionListener(e -> {
+            Object selected = itemIDComboBox.getSelectedItem();
+            if (selected != null) {
+                String itemId = selected.toString().split(" - ")[0].trim();
+                String supplierId = itemToSupplierMap.get(itemId);
+                supplierIDField.setText(supplierId != null ? supplierId : "");
+            }
+        });
 
         JLabel supplierLabel = new JLabel("Supplier ID:");
         supplierIDField = new JTextField(15);
+        supplierIDField.setEditable(false); // Make it read-only
 
         JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);
 
         JLabel dateLabel = new JLabel("Required Date (DD-MM-YYYY):");
-        requiredDateField = new JTextField(15); // Consider JDatePicker
-
-        JLabel raisedByLabel = new JLabel("Raised By:");
-        raisedByDropdown = new JComboBox<>(new String[]{"Sales Manager", "Administrator"}); // Add roles as needed
+        requiredDateField = new JTextField(15);
 
         // Layout components using GridBagLayout
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.0; infoPanel.add(itemLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDField, gbc);
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; infoPanel.add(supplierLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDField, gbc);
@@ -125,25 +158,22 @@ public class pr_e extends JPanel {
         gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.0; infoPanel.add(dateLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 3; gbc.weightx = 1.0; infoPanel.add(requiredDateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.0; infoPanel.add(raisedByLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 4; gbc.weightx = 1.0; infoPanel.add(raisedByDropdown, gbc);
-
         // Add PR Button
         addPrButton = new JButton("Add Purchase Requisition");
         addPrButton.setFont(new Font("Arial", Font.BOLD, 14));
         addPrButton.addActionListener(e -> controller.addPR());
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.weightx = 0;
-        gbc.insets = new Insets(20, 8, 8, 8); // More top margin for button
+        gbc.insets = new Insets(20, 8, 8, 8);
         infoPanel.add(addPrButton, gbc);
 
         // Filler to push components up
-        gbc.gridy = 6; gbc.weighty = 1.0;
+        gbc.gridy = 5; gbc.weighty = 1.0;
         infoPanel.add(new JLabel(""), gbc);
 
-        cardPanel.add(infoPanel, PR_INFO_CARD); // Add this panel to the CardLayout
+        cardPanel.add(infoPanel, PR_INFO_CARD);
     }
 
     // =================================================
@@ -198,18 +228,75 @@ public class pr_e extends JPanel {
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Allow editing for Item ID, Supplier ID, Quantity, Required Date, Raised By
-                // Columns 0 (PR ID) and 6 (Status) are NOT editable.
-                return column > 0 && column < 6;
+                // Only allow editing for Item ID, Quantity, Required Date
+                // Supplier ID (column 2) is NOT editable
+                return column == 1 || column == 3 || column == 4;
             }
         };
         prDetailsTable = new JTable(detailsTableModel);
         prDetailsTable.setRowHeight(30);
         prDetailsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         prDetailsTable.setFont(new Font("Arial", Font.PLAIN, 12));
-        // Add ComboBox for Raised By column if needed for editing
-        // TableColumn raisedByCol = prDetailsTable.getColumnModel().getColumn(5);
-        // raisedByCol.setCellEditor(new DefaultCellEditor(new JComboBox<>(new String[]{"1002", "1001"}))); // Use IDs for editing
+
+        // --- Load items and suppliers from items.txt for dropdowns ---
+        java.util.List<String> itemIDs = new java.util.ArrayList<>();
+        java.util.List<String> supplierIDs = new java.util.ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 3) {
+                    itemIDs.add(parts[0]); // Just the item ID
+                    supplierIDs.add(parts[2]); // supplier_id
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
+        }
+        // Remove duplicates from supplierIDs
+        java.util.Set<String> uniqueSuppliers = new java.util.LinkedHashSet<>(supplierIDs);
+
+        // --- Set ComboBox editor for Item ID column ---
+        JComboBox<String> itemComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
+        DefaultCellEditor itemEditor = new DefaultCellEditor(itemComboBox);
+        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item ID
+
+        // Add CellEditorListener to update Supplier ID after editing Item ID
+        itemEditor.addCellEditorListener(new javax.swing.event.CellEditorListener() {
+            @Override
+            public void editingStopped(javax.swing.event.ChangeEvent e) {
+                int row = prDetailsTable.getSelectedRow();
+                if (row != -1) {
+                    String itemId = prDetailsTable.getValueAt(row, 1).toString();
+                    String supplierId = itemToSupplierMap.get(itemId);
+                    if (supplierId != null) {
+                        prDetailsTable.setValueAt(supplierId, row, 2);
+                    }
+                }
+            }
+            @Override
+            public void editingCanceled(javax.swing.event.ChangeEvent e) {}
+        });
+
+        // TableModelListener for auto-filling Supplier ID
+        prDetailsTable.getModel().addTableModelListener(e -> {
+            int row = e.getFirstRow();
+            int column = e.getColumn();
+            if (column == 1 && row != -1) { // Item ID changed
+                String itemId = prDetailsTable.getValueAt(row, 1).toString();
+                String supplierId = itemToSupplierMap.get(itemId);
+                if (supplierId != null) {
+                    // Temporarily remove listener to avoid recursion
+                    javax.swing.event.TableModelListener[] listeners = ((DefaultTableModel) prDetailsTable.getModel()).getTableModelListeners();
+                    for (javax.swing.event.TableModelListener l : listeners)
+                        prDetailsTable.getModel().removeTableModelListener(l);
+                    prDetailsTable.setValueAt(supplierId, row, 2);
+                    // Re-add listeners
+                    for (javax.swing.event.TableModelListener l : listeners)
+                        prDetailsTable.getModel().addTableModelListener(l);
+                }
+            }
+        });
 
         JScrollPane detailsScrollPane = new JScrollPane(prDetailsTable);
         detailsScrollPane.setBorder(BorderFactory.createTitledBorder("Selected PR Details (Editable)"));

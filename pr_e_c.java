@@ -41,19 +41,24 @@ public class pr_e_c {
 
     public void addPR() {
         System.out.println("Attempting to add PR...");
-        String itemID = view.itemIDField.getText().trim();
+        // Get selected item and supplier IDs from ComboBoxes
+        String itemID = view.itemIDComboBox.getSelectedItem().toString().split(" - ")[0].trim();
+        // FIX: Get supplier ID from the read-only text field, not the combo box
         String supplierID = view.supplierIDField.getText().trim();
         String quantityStr = view.quantityField.getText().trim();
         String requiredDate = view.requiredDateField.getText().trim();
-        String raisedByRole = (String) view.raisedByDropdown.getSelectedItem();
-    
-        System.out.println("Item ID: " + itemID);
-        System.out.println("Supplier ID: " + supplierID);
-        System.out.println("Quantity Str: " + quantityStr);
-        System.out.println("Required Date: " + requiredDate);
-        System.out.println("Raised By Role: " + raisedByRole);
-    
-        if (itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || requiredDate.isEmpty() || raisedByRole == null) {
+
+        // Get logged-in user info
+        String raisedByID = login_c.currentUserId;
+        String raisedByRole = login_c.currentRole;
+
+        // Only allow if role is sm or am
+        if (!(raisedByRole.equalsIgnoreCase("sm") || raisedByRole.equalsIgnoreCase("am"))) {
+            JOptionPane.showMessageDialog(view, "Only Sales Manager or Administrator can raise a PR.", "Permission Denied", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || requiredDate.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Please fill all fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Validation failed: Empty fields.");
             return;
@@ -66,8 +71,7 @@ public class pr_e_c {
         if (!requiredDate.matches("\\d{2}-\\d{2}-\\d{4}")) { JOptionPane.showMessageDialog(view, "Required Date must be DD-MM-YYYY.", "Input Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Validation failed: Invalid date format.");
             return; }
-    
-        String raisedByID = mapRoleToID(raisedByRole);
+
         String status = "Pending";
         int prID = generatePrID();
         System.out.println("Generated PR ID: " + prID);
@@ -76,24 +80,23 @@ public class pr_e_c {
             return; }
         String formattedPrID = String.format("%04d", prID);
         String newPR = String.join("|", formattedPrID, itemID, supplierID, String.valueOf(quantity), requiredDate, raisedByID, status);
-    
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(PR_FILE, true))) {
             System.out.println("Writing to file: " + newPR);
             writer.write(newPR);
             writer.newLine();
             JOptionPane.showMessageDialog(view, "Purchase Requisition (PR ID: " + formattedPrID + ") added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            view.itemIDField.setText(""); view.supplierIDField.setText(""); view.quantityField.setText("");
-            view.requiredDateField.setText(""); view.raisedByDropdown.setSelectedIndex(0);
+            view.itemIDComboBox.setSelectedIndex(-1); view.supplierIDComboBox.setSelectedIndex(-1); view.quantityField.setText("");
+            view.requiredDateField.setText("");
             loadPRData();
             view.showCard(pr_e.PR_LIST_CARD);
             System.out.println("PR added successfully.");
-    
+
         } catch (IOException e) {
             JOptionPane.showMessageDialog(view, "Error saving PR: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             System.out.println("Error saving PR: " + e.getMessage());
         }
     }
-
 
     public void searchPR() {
         String searchId = view.searchField.getText().trim();
@@ -172,17 +175,26 @@ public class pr_e_c {
         String updatedSupplierId = view.detailsTableModel.getValueAt(0, 2).toString();
         String updatedQuantity = view.detailsTableModel.getValueAt(0, 3).toString();
         String updatedRequiredDate = view.detailsTableModel.getValueAt(0, 4).toString();
-        String updatedRaisedByRole = view.detailsTableModel.getValueAt(0, 5).toString(); // It's the Role Name in the details table
+        String updatedRaisedByDisplay = view.detailsTableModel.getValueAt(0, 5).toString(); // e.g. "fish - 1012"
+        // Extract user ID from "username - userID"
+        String updatedRaisedById;
+        if (updatedRaisedByDisplay.contains(" - ")) {
+            updatedRaisedById = updatedRaisedByDisplay.substring(updatedRaisedByDisplay.lastIndexOf(" - ") + 3).trim();
+        } else if (updatedRaisedByDisplay.startsWith("Unknown (") && updatedRaisedByDisplay.endsWith(")")) {
+            // fallback for "Unknown (1012)"
+            updatedRaisedById = updatedRaisedByDisplay.substring(9, updatedRaisedByDisplay.length() - 1).trim();
+        } else {
+            updatedRaisedById = updatedRaisedByDisplay.trim();
+        }
         String updatedStatus = view.detailsTableModel.getValueAt(0, 6).toString(); // Status shouldn't change here usually
 
         // --- Optional: Add validation for the updated data ---
-        if (updatedItemId.isEmpty() || updatedSupplierId.isEmpty() || updatedQuantity.isEmpty() || updatedRequiredDate.isEmpty() || updatedRaisedByRole.isEmpty()) {
+        if (updatedItemId.isEmpty() || updatedSupplierId.isEmpty() || updatedQuantity.isEmpty() || updatedRequiredDate.isEmpty() || updatedRaisedByDisplay.isEmpty()) {
             JOptionPane.showMessageDialog(view, "Updated fields cannot be empty.", "Validation Error", JOptionPane.ERROR_MESSAGE); return;
         }
         try { int qty = Integer.parseInt(updatedQuantity); if(qty <= 0) throw new NumberFormatException(); }
         catch (NumberFormatException e) { JOptionPane.showMessageDialog(view, "Updated quantity must be a positive number.", "Validation Error", JOptionPane.ERROR_MESSAGE); return; }
         if (!updatedRequiredDate.matches("\\d{2}-\\d{2}-\\d{4}")) { JOptionPane.showMessageDialog(view, "Updated date must be DD-MM-YYYY.", "Validation Error", JOptionPane.ERROR_MESSAGE); return; }
-        String updatedRaisedById = mapRoleToID(updatedRaisedByRole);
         // --- End Validation ---
 
         // Create the updated line string based on file format
@@ -205,10 +217,16 @@ public class pr_e_c {
     private boolean deleteRecordFromFile(String filename, String idToDelete) {
         File inputFile = new File(filename);
         File tempFile;
-        try { tempFile = File.createTempFile("temp_del_", ".txt", inputFile.getParentFile()); }
-        catch (IOException e) { System.err.println("Could not create temporary file: " + e); return false; }
+        try {
+            tempFile = File.createTempFile("temp_del_", ".txt", inputFile.getParentFile());
+        } catch (IOException e) {
+            System.err.println("Could not create temporary file: " + e);
+            return false;
+        }
 
+        boolean deleted = false;
         boolean found = false;
+
         if (!inputFile.exists()) return false;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
@@ -218,21 +236,49 @@ public class pr_e_c {
                 if (line.trim().isEmpty()) continue;
                 String[] data = line.split("\\|");
                 if (data.length > 0 && data[0].equals(idToDelete)) {
-                    found = true; // Mark as found, do not write to temp file
+                    found = true;
+                    if (data.length >= 7 && data[6].equalsIgnoreCase("Approved")) {
+                        // Do not allow deletion if status is Approved
+                        JOptionPane.showMessageDialog(view,
+                            "Cannot delete PR ID " + idToDelete + " because it is already Approved.",
+                            "Delete Not Allowed", JOptionPane.WARNING_MESSAGE);
+                        writer.write(line); // Keep the original line
+                        writer.newLine();
+                    } else {
+                        deleted = true;
+                        // Do not write this line (delete)
+                    }
                 } else {
-                    writer.write(line); writer.newLine();
+                    writer.write(line);
+                    writer.newLine();
                 }
             }
-        } catch (IOException e) { System.err.println("Error processing file for deletion: " + e); if(tempFile.exists()) tempFile.delete(); return false; }
+        } catch (IOException e) {
+            System.err.println("Error processing file for deletion: " + e);
+            if (tempFile.exists()) tempFile.delete();
+            return false;
+        }
 
-        if (!found) { if(tempFile.exists()) tempFile.delete(); return false; } // ID wasn't in file
+        if (!found) {
+            if (tempFile.exists()) tempFile.delete();
+            return false;
+        }
 
-        // Replace original file
         try {
-            if (!inputFile.delete()) { System.gc(); Thread.sleep(100); if (!inputFile.delete()) throw new IOException("Could not delete original: " + inputFile.getName()); }
-            if (!tempFile.renameTo(inputFile)) { /* Add copy fallback if needed */ throw new IOException("Could not rename temp file"); }
-            return true; // Success
-        } catch (IOException | SecurityException | InterruptedException e) { System.err.println("Error replacing file: " + e); return false; }
+            if (!inputFile.delete()) {
+                System.gc();
+                Thread.sleep(100);
+                if (!inputFile.delete())
+                    throw new IOException("Could not delete original: " + inputFile.getName());
+            }
+            if (!tempFile.renameTo(inputFile)) {
+                throw new IOException("Could not rename temp file");
+            }
+            return deleted;
+        } catch (IOException | SecurityException | InterruptedException e) {
+            System.err.println("Error replacing file: " + e);
+            return false;
+        }
     }
 
     // Generic method to update a record identified by the first field (ID)
@@ -271,7 +317,6 @@ public class pr_e_c {
         } catch (IOException | SecurityException | InterruptedException e) { System.err.println("Error replacing file: " + e); return false; }
     }
 
-
     // Map role name to user ID (adjust IDs as needed)
     private String mapRoleToID(String role) {
         return switch (role) {
@@ -282,13 +327,21 @@ public class pr_e_c {
         };
     }
 
-    // Map user ID back to Role Name (example, might be needed for display)
+    // Map user ID to "username - userID" by looking up users.txt
     private String mapIDToRole(String userID) {
-        return switch (userID) {
-            case "1002" -> "Sales Manager";
-            case "1001" -> "Administrator";
-            default -> "Unknown (" + userID + ")";
-        };
+        File file = new File("TXT/users.txt");
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|");
+                if (parts.length >= 2 && parts[0].trim().equals(userID.trim())) {
+                    return parts[1].trim() + " - " + userID.trim();
+                }
+            }
+        } catch (IOException e) {
+            // Optionally log error
+        }
+        return "Unknown (" + userID + ")";
     }
 
     // Generate next PR ID (ensure it's 4 digits starting from 5001)

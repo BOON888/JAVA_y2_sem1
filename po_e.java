@@ -10,7 +10,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.swing.table.TableCellEditor;
 import java.awt.event.FocusAdapter;
@@ -97,16 +99,14 @@ public class po_e extends JPanel {
                 new JLabel("Approved By:")
         };
 
-        prIDDropdown = new JComboBox<>(getUniquePrIdsFromFile().toArray(new String[0]));
+        prIDDropdown = new JComboBox<>(getApprovedPrIds().toArray(new String[0]));
         prIDDropdown.setEditable(false);
         prIDDropdown.addActionListener(e -> {
             String selectedPrId = (String) prIDDropdown.getSelectedItem();
-            if (selectedPrId != null && !selectedPrId.isEmpty()) {
-                String[] data = getPoDataByPrId(selectedPrId);
-                if (data != null) {
-                    itemIDField.setText(data[2]);      // item_id
-                    supplierIDField.setText(data[3]);  // supplier_id
-                }
+            if (selectedPrId != null && approvedPrMap.containsKey(selectedPrId)) {
+                String[] data = approvedPrMap.get(selectedPrId);
+                itemIDField.setText(data[0]);      // item_id
+                supplierIDField.setText(data[1]);  // supplier_id
             }
         });
         itemIDField = new JTextField(15);
@@ -494,76 +494,33 @@ public class po_e extends JPanel {
     }
 
     // Custom renderer for the Actions column
-    private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
-        private final JButton viewButton = new JButton("View");
-        private final JButton deleteButton = new JButton("Delete");
+private static class ActionButtonsRenderer extends JPanel implements TableCellRenderer {
+    private final JButton viewButton = new JButton("View");
+    private final JButton deleteButton = new JButton("Delete");
 
-        public ActionButtonsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            add(viewButton);
-            add(deleteButton);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-                viewButton.setForeground(table.getSelectionForeground());
-                deleteButton.setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-                viewButton.setForeground(table.getForeground());
-                deleteButton.setForeground(Color.RED); // Make delete button red
-            }
-            return this;
-        }
+    public ActionButtonsRenderer() {
+        setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        add(viewButton);
+        add(deleteButton);
     }
 
-    // Custom editor for the Actions column
-    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
-        private final JPanel panel;
-        private final JButton viewButton;
-        private final JButton deleteButton;
-        private int currentRow;
-        private final JTable table;
-        private final po_e poPanel;
-
-        public ActionButtonsEditor(JTable table, po_e poPanel) {
-            this.table = table;
-            this.poPanel = poPanel;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-            viewButton = new JButton("View");
-            deleteButton = new JButton("Delete");
-            deleteButton.setForeground(Color.RED); // Make delete button red
-            viewButton.addActionListener(this);
-            deleteButton.addActionListener(this);
-            panel.add(viewButton);
-            panel.add(deleteButton);
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                  boolean hasFocus, int row, int column) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        JButton viewBtn = new JButton("View");
+        JButton deleteBtn = new JButton("Delete");
+        panel.add(viewBtn);
+        panel.add(deleteBtn);
+        panel.setOpaque(true);
+        if (isSelected) {
+            panel.setBackground(table.getSelectionBackground());
+        } else {
+            panel.setBackground(table.getBackground());
         }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            currentRow = row;
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null; // No meaningful value to return
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (e.getSource() == viewButton) {
-                poPanel.viewPO(table.convertRowIndexToModel(currentRow));
-            } else if (e.getSource() == deleteButton) {
-                poPanel.deletePO(table.convertRowIndexToModel(currentRow));
-            }
-            fireEditingStopped(); // Make sure editing stops
-        }
+        return panel;
     }
+}
 
     public void updateSelectedPO() {
     if (currentPoIdForEdit == null) {
@@ -617,6 +574,48 @@ public class po_e extends JPanel {
         });
     }
 
+    // --- ActionButtonsEditor class for Actions column ---
+    private static class ActionButtonsEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        private final JButton viewButton = new JButton("View");
+        private final JButton deleteButton = new JButton("Delete");
+        private int row = -1;
+        private JTable table;
+        private po_e parentPanel;
+
+        public ActionButtonsEditor(JTable table, po_e parentPanel) {
+            this.table = table;
+            this.parentPanel = parentPanel;
+            panel.add(viewButton);
+            panel.add(deleteButton);
+
+            viewButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.viewPO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+
+            deleteButton.addActionListener(e -> {
+                if (row >= 0) {
+                    parentPanel.deletePO(table.convertRowIndexToModel(row));
+                }
+                fireEditingStopped();
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            this.row = row;
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
+        }
+    }
+
     // Method to set the logged-in user (you'd call this after successful login)
     public void setLoggedInUser(String username) {
         this.loggedInUser = username;
@@ -657,35 +656,37 @@ public class po_e extends JPanel {
         return parts.length > 0 ? parts[0] : display;
     }
 
-    private List<String> getUniquePrIdsFromFile() {
-    List<String> prIds = new ArrayList<>();
-    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
+    private Map<String, String[]> approvedPrMap = new HashMap<>();
+
+private void loadApprovedPrData() {
+    approvedPrMap.clear();
+    File file = new File("TXT/pr.txt");
+    if (!file.exists()) {
+        System.out.println("pr.txt file not found.");
+        return;
+    }
+
+    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
         String line;
-        while ((line = reader.readLine()) != null) {
+        while ((line = br.readLine()) != null) {
             String[] parts = line.split("\\|");
-            if (parts.length >= 2 && !prIds.contains(parts[1])) {
-                prIds.add(parts[1]); // parts[1] = pr_id
+            if (parts.length >= 7) {
+                String prId = parts[0];
+                String itemId = parts[1];
+                String supplierId = parts[2];
+                String status = parts[6];
+                if ("Approved".equalsIgnoreCase(status)) {
+                    approvedPrMap.put(prId, new String[]{itemId, supplierId});
+                }
             }
         }
     } catch (IOException e) {
         e.printStackTrace();
     }
-    return prIds;
-    }
+}
 
-    private String[] getPoDataByPrId(String prId) {
-    try (BufferedReader reader = new BufferedReader(new FileReader("TXT/po.txt"))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] parts = line.split("\\|");
-            if (parts.length >= 4 && parts[1].equals(prId)) {
-                return parts;
-            }
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
+    private List<String> getApprovedPrIds() {
+        loadApprovedPrData();
+        return new ArrayList<>(approvedPrMap.keySet());
     }
-    return null;
-    }
-
 }

@@ -1,5 +1,7 @@
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -12,6 +14,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
 
 public class inventory_v extends JPanel {
 
@@ -51,22 +55,41 @@ public class inventory_v extends JPanel {
         public String getStatus() { return status; }
     }
 
+    private DefaultTableModel tableModel;
+    private JTable table;
+    private TableRowSorter<DefaultTableModel> sorter;
+    private JTextField searchTextField;
+
     public inventory_v() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(0, 0, MARGIN, 0)); // Apply consistent margin
+
+        // Top Panel for Title and Search Bar
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBorder(new EmptyBorder(10, MARGIN, 10, MARGIN));
+
+        // Title Label (Top Left)
+        JLabel titleLabel = new JLabel("Inventory List");
+        titleLabel.setFont(TITLE_FONT);
+        topPanel.add(titleLabel, BorderLayout.WEST);
+
+        // Search Bar (Top Right, Full Width)
+        JPanel searchContainer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setFont(GLOBAL_FONT);
+        searchTextField = new JTextField(30); // Increased width for better visibility
+        searchTextField.setFont(GLOBAL_FONT);
+        searchContainer.add(searchLabel);
+        searchContainer.add(searchTextField);
+        topPanel.add(searchContainer, BorderLayout.EAST);
+
+        add(topPanel, BorderLayout.NORTH);
 
         // Load inventory items from the file
         ArrayList<InventoryItem> inventoryList = loadInventoryItems();
 
         // Sort the inventory items by Inventory ID in descending order
         Collections.sort(inventoryList, (item1, item2) -> Integer.compare(item2.getInventoryId(), item1.getInventoryId()));
-
-        // Title for the table
-        JLabel titleLabel = new JLabel("Inventory List", SwingConstants.LEFT);
-        titleLabel.setFont(TITLE_FONT);
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.add(titleLabel, BorderLayout.WEST);
-        add(titleLabel, BorderLayout.NORTH);
 
         // Define the column names for the table
         String[] columnNames = {"Inventory ID", "Item ID", "Stock Level", "Last Updated", "Received Qty", "Updated By", "Status"};
@@ -86,7 +109,7 @@ public class inventory_v extends JPanel {
         }
 
         // Create a table model and prevent editing of the cells
-        DefaultTableModel model = new DefaultTableModel(data, columnNames) {
+        tableModel = new DefaultTableModel(data, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;   // Disable editing of cells
@@ -94,7 +117,7 @@ public class inventory_v extends JPanel {
         };
 
         // Create JTable
-        JTable table = new JTable(model);
+        table = new JTable(tableModel);
         table.setFont(GLOBAL_FONT); // Set global font for table content
         table.getTableHeader().setFont(HEADER_FONT); // Set header font
         table.setRowHeight(30); // Increase row height for better readability
@@ -102,6 +125,10 @@ public class inventory_v extends JPanel {
 
         // Add the table to a scroll pane
         JScrollPane scrollPane = new JScrollPane(table);
+
+        // Set up TableRowSorter for filtering
+        sorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(sorter);
 
         // Adjust the column widths
         int maxColumnWidth = 250; // Increased max column width
@@ -124,6 +151,19 @@ public class inventory_v extends JPanel {
 
         // Add the scroll pane to the panel
         add(scrollPane, BorderLayout.CENTER);
+
+        // Add listener for the search bar
+        searchTextField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = searchTextField.getText();
+                if (text.trim().length() == 0) {
+                    sorter.setRowFilter(null); // Show all rows if the search field is empty
+                } else {
+                    sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text)); // Filter rows case-insensitively
+                }
+            }
+        });
     }
 
     private ArrayList<InventoryItem> loadInventoryItems() {
@@ -166,6 +206,7 @@ public class inventory_v extends JPanel {
         }
         return inventoryList;
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

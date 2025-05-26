@@ -225,7 +225,8 @@ public class sales_e extends JPanel {
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
                 if (data.length >= 6) {
-                    LocalDate date = LocalDate.parse(data[2]); // Parse date from file
+                    // Parse date using the dd-MM-yyyy format
+                    LocalDate date = LocalDate.parse(data[2], DISPLAY_FORMAT);
                     Sales sale = new Sales(
                             data[0],
                             data[1],
@@ -248,7 +249,7 @@ public class sales_e extends JPanel {
                         sale.getSalesId(),
                         sale.getItemId(),
                         itemName,
-                        date.format(DISPLAY_FORMAT), // Format date for display
+                        date.format(DISPLAY_FORMAT), // Display in dd-MM-yyyy format
                         sale.getQuantitySold(),
                         sale.getRemainingStock(),
                         sale.getSalesPerson(),
@@ -265,7 +266,14 @@ public class sales_e extends JPanel {
         File file = new File(SALES_FILE);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (Sales sale : salesList) {
-                writer.write(sale.toString() + "\n"); // Uses LocalDate's default toString() format
+                // Format the sale data manually with dd-MM-yyyy date format
+                String formattedSale = sale.getSalesId() + "|" +
+                                     sale.getItemId() + "|" +
+                                     sale.getSalesDate().format(DISPLAY_FORMAT) + "|" + // Use dd-MM-yyyy format
+                                     sale.getQuantitySold() + "|" +
+                                     sale.getRemainingStock() + "|" +
+                                     sale.getSalesPerson();
+                writer.write(formattedSale + "\n");
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving sales: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -466,5 +474,42 @@ public class sales_e extends JPanel {
             }
             super.insertString(offset, str, attr);
         }
+    }
+
+    // Sales class definition
+    class Sales {
+        private String salesId;
+        private String itemId;
+        private LocalDate salesDate;
+        private int quantitySold;
+        private int remainingStock;
+        private String salesPerson;
+
+        // Constructor
+        public Sales(String salesId, String itemId, LocalDate salesDate,
+                     int quantitySold, int remainingStock, String salesPerson) {
+            this.salesId = salesId;
+            this.itemId = itemId;
+            this.salesDate = salesDate;
+            this.quantitySold = quantitySold;
+            this.remainingStock = remainingStock;
+            this.salesPerson = salesPerson;
+        }
+
+        // Getters
+        public String getSalesId() { return salesId; }
+        public String getItemId() { return itemId; }
+        public LocalDate getSalesDate() { return salesDate; }
+        public int getQuantitySold() { return quantitySold; }
+        public int getRemainingStock() { return remainingStock; }
+        public String getSalesPerson() { return salesPerson; }
+
+        // Setters
+        public void setSalesId(String salesId) { this.salesId = salesId; }
+        public void setItemId(String itemId) { this.itemId = itemId; }
+        public void setSalesDate(LocalDate salesDate) { this.salesDate = salesDate; }
+        public void setQuantitySold(int quantitySold) { this.quantitySold = quantitySold; }
+        public void setRemainingStock(int remainingStock) { this.remainingStock = remainingStock; }
+        public void setSalesPerson(String salesPerson) { this.salesPerson = salesPerson; }
     }
 }

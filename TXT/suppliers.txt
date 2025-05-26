@@ -1,3 +1,6 @@
-3001|uncle A|1234567890|uncleA@gmail.com|uncle A address|A category
-3002|uncle B|1234567890|uncleB@gmail.com|uncle B address|B category
-3003|uncle C|1234567890|uncleC@gmail.com|uncle C address|C category
+3001|amanda|1234567890|amanda@gmail.com|amanda address|drinks
+3002|harry|1234567890|harry@gmail.com|harry address|vegetables
+3003|amy|1234567890|amy@gmail.com|amy address|fruits
+3004|ahchong|1234567890|ahchong@gmail.com|ahchong address|meat
+3005|sam|1234567890|sam@gmail.com|sam address|drinks
+3006|bob|1234567890|bob@gmail.com|bob address|fruits

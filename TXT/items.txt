@@ -4,3 +4,4 @@
 2004|uncle B item 3|3002|category B|40.0|200
 2006|uncle C item 2|3003|category C|15.0|7
 2007|maggi|3001|food|10.0|8
+2008|maggi|3001|food|8.0|0

@@ -110,7 +110,34 @@ public class po_e extends JPanel {
             }
         });
         itemIDField = new JTextField(15);
+        itemIDField.setEditable(false); // Make read-only
+
         supplierIDField = new JTextField(15);
+        supplierIDField.setEditable(true); // Allow editing
+
+        // Add focus listener for immediate validation
+        supplierIDField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                String prID = (String) prIDDropdown.getSelectedItem();
+                String enteredSupplierID = supplierIDField.getText().trim();
+                if (prID != null && approvedPrMap.containsKey(prID)) {
+                    String[] prData = approvedPrMap.get(prID); // [itemID, supplierID]
+                    String correctSupplierID = prData[1];
+                    if (!enteredSupplierID.equals(correctSupplierID)) {
+                        JOptionPane.showMessageDialog(
+                            supplierIDField,
+                            "Supplier ID does not match the PR's supplier ID (" + correctSupplierID + ").",
+                            "Invalid Supplier ID",
+                            JOptionPane.ERROR_MESSAGE
+                        );
+                        supplierIDField.setText(correctSupplierID); // Optionally reset to correct value
+                        supplierIDField.requestFocus();
+                    }
+                }
+            }
+        });
+
         quantityField = new JTextField(15);
         orderDateField = new JTextField(15);
 
@@ -179,10 +206,23 @@ public class po_e extends JPanel {
             String receivedBy = mapRoleToID((String) receivedByDropdown.getSelectedItem());
             String approvedBy = mapRoleToID((String) approvedByDropdown.getSelectedItem());
 
+            // --- Validation: Supplier ID must match the item ID for the selected PR ---
+            if (prID != null && approvedPrMap.containsKey(prID)) {
+                String[] prData = approvedPrMap.get(prID); // [itemID, supplierID]
+                String correctItemID = prData[0];
+                String correctSupplierID = prData[1];
+                if (!itemID.equals(correctItemID) || !supplierID.equals(correctSupplierID)) {
+                    JOptionPane.showMessageDialog(this,
+                        "Supplier ID does not match the Item ID for the selected PR.\n" +
+                        "Expected Item ID: " + correctItemID + ", Supplier ID: " + correctSupplierID,
+                        "Invalid Supplier/Item", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
             if (poController.addPurchaseOrder(prID, itemID, supplierID, quantityStr, orderDate, receivedBy, approvedBy)) {
-                loadPurchaseOrders(); // 重新加载数据
-                tabbedPane.setSelectedIndex(1); // 切换到 PO List 选项卡
-                // 清空输入字段
+                loadPurchaseOrders();
+                tabbedPane.setSelectedIndex(1);
                 prIDField.setText(""); itemIDField.setText(""); supplierIDField.setText("");
                 quantityField.setText(""); orderDateField.setText("");
                 receivedByDropdown.setSelectedIndex(0); approvedByDropdown.setSelectedIndex(0);

@@ -42,9 +42,10 @@ public class pr_e_c {
     public void addPR() {
         System.out.println("Attempting to add PR...");
         // Get selected item and supplier IDs from ComboBoxes
-        String itemID = view.itemIDComboBox.getSelectedItem().toString().split(" - ")[0].trim();
+        String itemName = view.itemIDComboBox.getSelectedItem().toString();
+        String itemID = view.itemNameToIdMap.get(itemName);
         // FIX: Get supplier ID from the read-only text field, not the combo box
-        String supplierID = view.supplierIDField.getText().trim();
+        String supplierID = view.supplierIDComboBox.getSelectedItem().toString().trim();
         String quantityStr = view.quantityField.getText().trim();
         String requiredDate = view.requiredDateField.getText().trim();
 

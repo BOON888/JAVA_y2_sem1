@@ -5,3 +5,4 @@
 2005|milo|3005|drink|20.0|102
 2006|pineapple|3006|fruits|20.0|80
 2007|orange juice|3001|drink|5.0|28
+2008|milo|3007|drinks|20.0|209

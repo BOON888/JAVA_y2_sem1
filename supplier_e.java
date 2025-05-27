@@ -1,3 +1,4 @@
+
 import java.awt.*;
 import java.io.*;
 import javax.swing.*;
@@ -45,25 +46,27 @@ public class supplier_e extends JPanel {
         inputPanel.setBorder(BorderFactory.createTitledBorder("Supplier Info"));
 
         nameField = new JTextField(15);
-        
+
         // Contact Number Field with strict validation
         contactField = new JTextField(15);
         contactField.setDocument(new PlainDocument() {
             @Override
             public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
-                if (str == null) return;
-                
+                if (str == null) {
+                    return;
+                }
+
                 String digitsOnly = str.replaceAll("[^0-9]", "");
                 if (digitsOnly.isEmpty()) {
                     Toolkit.getDefaultToolkit().beep();
                     return;
                 }
-                
+
                 if ((getLength() + digitsOnly.length()) > 11) {
                     Toolkit.getDefaultToolkit().beep();
                     return;
                 }
-                
+
                 super.insertString(offset, digitsOnly, attr);
             }
         });
@@ -75,10 +78,10 @@ public class supplier_e extends JPanel {
             public boolean verify(JComponent input) {
                 String text = ((JTextField) input).getText().trim();
                 if (!text.isEmpty() && !isValidEmail(text)) {
-                    JOptionPane.showMessageDialog(input, 
-                        "Invalid email format!\nExample: name@example.com", 
-                        "Invalid Email", 
-                        JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(input,
+                            "Invalid email format!\nExample: name@example.com",
+                            "Invalid Email",
+                            JOptionPane.ERROR_MESSAGE);
                     return false;
                 }
                 return true;
@@ -111,13 +114,13 @@ public class supplier_e extends JPanel {
         tablePanel.setPreferredSize(new Dimension(750, 220));
         tablePanel.setBorder(BorderFactory.createTitledBorder("Supplier List"));
 
-        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Item Name"}, 0) {
+        tableModel = new DefaultTableModel(new String[]{"ID", "Name", "Contact No.", "Email", "Address", "Supply Category"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // Make table cells non-editable
             }
         };
-        
+
         supplierTable = new JTable(tableModel);
         supplierTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tablePanel.add(new JScrollPane(supplierTable), BorderLayout.CENTER);
@@ -150,19 +153,19 @@ public class supplier_e extends JPanel {
 
         // Validate contact number format
         if (!isValidContactNumber(contact)) {
-            JOptionPane.showMessageDialog(this, 
-                "Contact number must be 10-11 digits only\nNo spaces or special characters allowed", 
-                "Invalid Contact", 
-                JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Contact number must be 10-11 digits only\nNo spaces or special characters allowed",
+                    "Invalid Contact",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         // Validate email format
         if (!isValidEmail(email)) {
-            JOptionPane.showMessageDialog(this, 
-                "Invalid email format!\nMust contain @ and valid domain\nExample: name@example.com", 
-                "Invalid Email", 
-                JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Invalid email format!\nMust contain @ and valid domain\nExample: name@example.com",
+                    "Invalid Email",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -175,11 +178,11 @@ public class supplier_e extends JPanel {
     private void deleteSupplier() {
         int selectedRow = supplierTable.getSelectedRow();
         if (selectedRow != -1) {
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                "Are you sure you want to delete this supplier?", 
-                "Confirm Delete", 
-                JOptionPane.YES_NO_OPTION);
-            
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete this supplier?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION);
+
             if (confirm == JOptionPane.YES_OPTION) {
                 tableModel.removeRow(selectedRow);
                 saveSuppliers();
@@ -199,30 +202,30 @@ public class supplier_e extends JPanel {
             String item = tableModel.getValueAt(selectedRow, 5).toString();
 
             // Create edit dialog with current values
-            supplier_v dialog = new supplier_v((JFrame) SwingUtilities.getWindowAncestor(this), 
-                name, contact, email, address, item);
+            supplier_v dialog = new supplier_v((JFrame) SwingUtilities.getWindowAncestor(this),
+                    name, contact, email, address, item);
             dialog.setVisible(true);
 
             if (dialog.isSaved()) {
                 String[] newData = dialog.getEditedData();
-                
+
                 // Validate edited data before saving
                 if (!isValidContactNumber(newData[1])) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Contact number must be 10-11 digits", 
-                        "Invalid Contact", 
-                        JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            "Contact number must be 10-11 digits",
+                            "Invalid Contact",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
+
                 if (!isValidEmail(newData[2])) {
-                    JOptionPane.showMessageDialog(this, 
-                        "Invalid email format", 
-                        "Invalid Email", 
-                        JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            "Invalid email format",
+                            "Invalid Email",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
+
                 // Update table if validations pass
                 tableModel.setValueAt(newData[0], selectedRow, 1);
                 tableModel.setValueAt(newData[1], selectedRow, 2);
@@ -248,18 +251,18 @@ public class supplier_e extends JPanel {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 writer.println(
-                    tableModel.getValueAt(i, 0) + "|" +
-                    tableModel.getValueAt(i, 1) + "|" +
-                    tableModel.getValueAt(i, 2) + "|" +
-                    tableModel.getValueAt(i, 3) + "|" +
-                    tableModel.getValueAt(i, 4) + "|" +
-                    tableModel.getValueAt(i, 5));
+                        tableModel.getValueAt(i, 0) + "|"
+                        + tableModel.getValueAt(i, 1) + "|"
+                        + tableModel.getValueAt(i, 2) + "|"
+                        + tableModel.getValueAt(i, 3) + "|"
+                        + tableModel.getValueAt(i, 4) + "|"
+                        + tableModel.getValueAt(i, 5));
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, 
-                "Error saving suppliers: " + e.getMessage(), 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Error saving suppliers: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -270,10 +273,10 @@ public class supplier_e extends JPanel {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, 
-                    "Error creating suppliers file: " + e.getMessage(), 
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "Error creating suppliers file: " + e.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
             return;
         }
@@ -293,10 +296,10 @@ public class supplier_e extends JPanel {
                 }
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, 
-                "Error loading suppliers: " + e.getMessage(), 
-                "Error", 
-                JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Error loading suppliers: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 }

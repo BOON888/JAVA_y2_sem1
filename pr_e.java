@@ -14,12 +14,10 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.table.TableCellEditor;
 import javax.swing.RowFilter;
 import java.util.ArrayList;
-import java.util.Set;
-import java.util.LinkedHashSet;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.io.FileReader;
+import java.io.BufferedReader;
 
 public class pr_e extends JPanel {
 
@@ -32,9 +30,8 @@ public class pr_e extends JPanel {
     private JPanel topButtonPanel; // Panel for PR Info/PR List buttons
 
     // --- PR Info Components ---
-    protected JComboBox<String> itemIDComboBox, supplierIDComboBox; // NEW: Use JComboBox
+    protected JComboBox<String> itemIDComboBox, supplierIDComboBox;
     protected JTextField quantityField, requiredDateField;
-    protected JTextField supplierIDField;
     protected JButton addPrButton;
 
     // --- PR List Components ---
@@ -48,7 +45,8 @@ public class pr_e extends JPanel {
     protected TableRowSorter<DefaultTableModel> sorter; // Sorter for prTable
     protected List<String[]> fullPrData; // To store all data read from file
     protected pr_e_c controller;
-    private Map<String, String> itemToSupplierMap = new HashMap<>();
+    public Map<String, String> itemIdToNameMap = new HashMap<>();
+    public Map<String, java.util.List<String>> itemNameToSupplierIdsMap = new HashMap<>();
 
     public pr_e() {
         setLayout(new BorderLayout(0, 5)); // Main layout with vertical gap
@@ -105,43 +103,92 @@ public class pr_e extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
 
         // --- Load items and suppliers from items.txt ---
-        List<String> itemIDs = new ArrayList<>();
-        Set<String> supplierIDs = new LinkedHashSet<>();
-        itemToSupplierMap.clear();
+        List<String> itemNames = new ArrayList<>();
+        itemIdToNameMap.clear();
+        itemNameToSupplierIdsMap.clear();
+
+        // Temporary maps for summing stock by item name
+        Map<String, Integer> itemNameToTotalStock = new HashMap<>();
+        Map<String, List<String>> itemNameToSuppliers = new HashMap<>();
+        Map<String, String> itemNameToFirstId = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
-                    itemIDs.add(parts[0] + " - " + parts[1]); // e.g. "2001 - uncle A item 2"
-                    supplierIDs.add(parts[2]);
-                    itemToSupplierMap.put(parts[0], parts[2]); // Map item_id -> supplier_id
+                if (parts.length >= 6) {
+                    String itemId = parts[0];
+                    String itemName = parts[1];
+                    String supplierId = parts[2];
+                    int stockQty = 0;
+                    try { stockQty = Integer.parseInt(parts[5]); } catch (NumberFormatException ignored) {}
+
+                    // Sum stock by item name
+                    itemNameToTotalStock.put(itemName, itemNameToTotalStock.getOrDefault(itemName, 0) + stockQty);
+
+                    // Collect suppliers for each item name
+                    itemNameToSuppliers.computeIfAbsent(itemName, k -> new ArrayList<>()).add(supplierId);
+
+                    // Store the first itemId for each item name (for mapping)
+                    if (!itemNameToFirstId.containsKey(itemName)) {
+                        itemNameToFirstId.put(itemName, itemId);
+                    }
                 }
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
         }
 
+        // Now, only add item names with total stock < 10
+        for (String itemName : itemNameToTotalStock.keySet()) {
+            if (itemNameToTotalStock.get(itemName) < 10) {
+                itemNames.add(itemName);
+                itemIdToNameMap.put(itemName, itemNameToFirstId.get(itemName));
+                itemNameToSupplierIdsMap.put(itemName, itemNameToSuppliers.get(itemName));
+            }
+        }
+
         // --- ComboBoxes ---
-        JLabel itemLabel = new JLabel("Item ID:");
-        itemIDComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
+        JLabel itemLabel = new JLabel("Item Name:");
+        itemIDComboBox = new JComboBox<>(itemNames.toArray(new String[0]));
+        supplierIDComboBox = new JComboBox<>();
+
+        // Populate supplierIDComboBox when item is selected
         itemIDComboBox.addActionListener(e -> {
             Object selected = itemIDComboBox.getSelectedItem();
+            supplierIDComboBox.removeAllItems();
             if (selected != null) {
-                String itemId = selected.toString().split(" - ")[0].trim();
-                String supplierId = itemToSupplierMap.get(itemId);
-                supplierIDField.setText(supplierId != null ? supplierId : "");
+                String itemName = selected.toString();
+                java.util.List<String> supplierIds = itemNameToSupplierIdsMap.get(itemName);
+                if (supplierIds != null) {
+                    for (String sid : supplierIds) {
+                        supplierIDComboBox.addItem(sid);
+                    }
+                }
+                supplierIDComboBox.setSelectedIndex(-1); // Let user choose
             }
         });
 
-        JLabel supplierLabel = new JLabel("Supplier ID:");
-        supplierIDField = new JTextField(15);
-        supplierIDField.setEditable(false); // Make it read-only
+        // --- Ensure supplierIDComboBox is populated on first load ---
+        if (itemIDComboBox.getItemCount() > 0) {
+            itemIDComboBox.setSelectedIndex(0); // Select first item
+            Object selected = itemIDComboBox.getSelectedItem();
+            supplierIDComboBox.removeAllItems();
+            if (selected != null) {
+                String itemName = selected.toString();
+                java.util.List<String> supplierIds = itemNameToSupplierIdsMap.get(itemName);
+                if (supplierIds != null) {
+                    for (String sid : supplierIds) {
+                        supplierIDComboBox.addItem(sid);
+                    }
+                }
+                supplierIDComboBox.setSelectedIndex(-1); // Let user choose
+            }
+        }
 
+        JLabel supplierLabel = new JLabel("Supplier ID:");
         JLabel quantityLabel = new JLabel("Quantity Request:");
         quantityField = new JTextField(15);
-
         JLabel dateLabel = new JLabel("Required Date (DD-MM-YYYY):");
         requiredDateField = new JTextField(15);
 
@@ -150,7 +197,7 @@ public class pr_e extends JPanel {
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; infoPanel.add(itemIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.0; infoPanel.add(supplierLabel, gbc);
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDField, gbc);
+        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 1.0; infoPanel.add(supplierIDComboBox, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.0; infoPanel.add(quantityLabel, gbc);
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 1.0; infoPanel.add(quantityField, gbc);
@@ -224,7 +271,7 @@ public class pr_e extends JPanel {
         // -------------------------
 
         // --- Bottom Table (PR Details) ---
-        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Request", "Required Date", "Raised By", "Status"};
+        String[] detailsColumnNames = {"PR ID", "Item Name", "Supplier ID", "Quantity Request", "Required Date", "Raised By", "Status"};
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -241,13 +288,18 @@ public class pr_e extends JPanel {
         // --- Load items and suppliers from items.txt for dropdowns ---
         java.util.List<String> itemIDs = new java.util.ArrayList<>();
         java.util.List<String> supplierIDs = new java.util.ArrayList<>();
+        // Map from item ID to supplier ID
+        Map<String, String> itemToSupplierMap = new HashMap<>();
+        itemIdToNameMap.clear();
         try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 3) {
-                    itemIDs.add(parts[0]); // Just the item ID
-                    supplierIDs.add(parts[2]); // supplier_id
+                    itemIDs.add(parts[0]);
+                    supplierIDs.add(parts[2]);
+                    itemToSupplierMap.put(parts[0], parts[2]);
+                    itemIdToNameMap.put(parts[0], parts[1]); // Map item id to item name
                 }
             }
         } catch (Exception e) {
@@ -259,7 +311,7 @@ public class pr_e extends JPanel {
         // --- Set ComboBox editor for Item ID column ---
         JComboBox<String> itemComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
         DefaultCellEditor itemEditor = new DefaultCellEditor(itemComboBox);
-        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item ID
+        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item Name
 
         // Add CellEditorListener to update Supplier ID after editing Item ID
         itemEditor.addCellEditorListener(new javax.swing.event.CellEditorListener() {

@@ -2,6 +2,7 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.io.*;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class pr_e_c {
@@ -42,9 +43,16 @@ public class pr_e_c {
     public void addPR() {
         System.out.println("Attempting to add PR...");
         // Get selected item and supplier IDs from ComboBoxes
-        String itemID = view.itemIDComboBox.getSelectedItem().toString().split(" - ")[0].trim();
+        String itemName = view.itemIDComboBox.getSelectedItem().toString();
+        String itemID = view.itemIdToNameMap != null && view.itemIdToNameMap.containsValue(itemName)
+            ? view.itemIdToNameMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(itemName))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse("")
+            : "";
         // FIX: Get supplier ID from the read-only text field, not the combo box
-        String supplierID = view.supplierIDField.getText().trim();
+        String supplierID = view.supplierIDComboBox.getSelectedItem().toString().trim();
         String quantityStr = view.quantityField.getText().trim();
         String requiredDate = view.requiredDateField.getText().trim();
 
@@ -131,9 +139,10 @@ public class pr_e_c {
 
         if (dataToView != null && dataToView.length >= 7) {
             // Populate the details table with the single row found
+            String itemName = view.itemIdToNameMap.getOrDefault(dataToView[1], dataToView[1]);
             view.detailsTableModel.addRow(new Object[]{
                     dataToView[0], // PR ID
-                    dataToView[1], // Item ID
+                    itemName,      // Item Name instead of Item ID
                     dataToView[2], // Supplier ID
                     dataToView[3], // Quantity
                     dataToView[4], // Required Date
@@ -171,7 +180,15 @@ public class pr_e_c {
 
         // Get data from the details table (which should have only 1 row)
         String prId = view.detailsTableModel.getValueAt(0, 0).toString();
-        String updatedItemId = view.detailsTableModel.getValueAt(0, 1).toString();
+        String itemName = view.detailsTableModel.getValueAt(0, 1).toString();
+        String updatedItemId = null;
+        for (Map.Entry<String, String> entry : view.itemIdToNameMap.entrySet()) {
+            if (entry.getValue().equals(itemName)) {
+                updatedItemId = entry.getKey();
+                break;
+            }
+        }
+        if (updatedItemId == null) updatedItemId = itemName; // fallback if not found
         String updatedSupplierId = view.detailsTableModel.getValueAt(0, 2).toString();
         String updatedQuantity = view.detailsTableModel.getValueAt(0, 3).toString();
         String updatedRequiredDate = view.detailsTableModel.getValueAt(0, 4).toString();

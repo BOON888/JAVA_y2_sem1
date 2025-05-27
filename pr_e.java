@@ -45,7 +45,7 @@ public class pr_e extends JPanel {
     protected TableRowSorter<DefaultTableModel> sorter; // Sorter for prTable
     protected List<String[]> fullPrData; // To store all data read from file
     protected pr_e_c controller;
-    public Map<String, String> itemNameToIdMap = new HashMap<>();
+    public Map<String, String> itemIdToNameMap = new HashMap<>();
     public Map<String, java.util.List<String>> itemNameToSupplierIdsMap = new HashMap<>();
 
     public pr_e() {
@@ -104,24 +104,48 @@ public class pr_e extends JPanel {
 
         // --- Load items and suppliers from items.txt ---
         List<String> itemNames = new ArrayList<>();
-        itemNameToIdMap.clear();
+        itemIdToNameMap.clear();
         itemNameToSupplierIdsMap.clear();
+
+        // Temporary maps for summing stock by item name
+        Map<String, Integer> itemNameToTotalStock = new HashMap<>();
+        Map<String, List<String>> itemNameToSuppliers = new HashMap<>();
+        Map<String, String> itemNameToFirstId = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
-                if (parts.length >= 3) {
+                if (parts.length >= 6) {
                     String itemId = parts[0];
                     String itemName = parts[1];
                     String supplierId = parts[2];
-                    itemNames.add(itemName);
-                    itemNameToIdMap.put(itemName, itemId);
-                    itemNameToSupplierIdsMap.computeIfAbsent(itemName, k -> new ArrayList<>()).add(supplierId);
+                    int stockQty = 0;
+                    try { stockQty = Integer.parseInt(parts[5]); } catch (NumberFormatException ignored) {}
+
+                    // Sum stock by item name
+                    itemNameToTotalStock.put(itemName, itemNameToTotalStock.getOrDefault(itemName, 0) + stockQty);
+
+                    // Collect suppliers for each item name
+                    itemNameToSuppliers.computeIfAbsent(itemName, k -> new ArrayList<>()).add(supplierId);
+
+                    // Store the first itemId for each item name (for mapping)
+                    if (!itemNameToFirstId.containsKey(itemName)) {
+                        itemNameToFirstId.put(itemName, itemId);
+                    }
                 }
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
+        }
+
+        // Now, only add item names with total stock < 10
+        for (String itemName : itemNameToTotalStock.keySet()) {
+            if (itemNameToTotalStock.get(itemName) < 10) {
+                itemNames.add(itemName);
+                itemIdToNameMap.put(itemName, itemNameToFirstId.get(itemName));
+                itemNameToSupplierIdsMap.put(itemName, itemNameToSuppliers.get(itemName));
+            }
         }
 
         // --- ComboBoxes ---
@@ -247,7 +271,7 @@ public class pr_e extends JPanel {
         // -------------------------
 
         // --- Bottom Table (PR Details) ---
-        String[] detailsColumnNames = {"PR ID", "Item ID", "Supplier ID", "Quantity Request", "Required Date", "Raised By", "Status"};
+        String[] detailsColumnNames = {"PR ID", "Item Name", "Supplier ID", "Quantity Request", "Required Date", "Raised By", "Status"};
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -266,14 +290,16 @@ public class pr_e extends JPanel {
         java.util.List<String> supplierIDs = new java.util.ArrayList<>();
         // Map from item ID to supplier ID
         Map<String, String> itemToSupplierMap = new HashMap<>();
+        itemIdToNameMap.clear();
         try (BufferedReader br = new BufferedReader(new FileReader("TXT/items.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split("\\|");
                 if (parts.length >= 3) {
-                    itemIDs.add(parts[0]); // Just the item ID
-                    supplierIDs.add(parts[2]); // supplier_id
-                    itemToSupplierMap.put(parts[0], parts[2]); // Map item ID to supplier ID
+                    itemIDs.add(parts[0]);
+                    supplierIDs.add(parts[2]);
+                    itemToSupplierMap.put(parts[0], parts[2]);
+                    itemIdToNameMap.put(parts[0], parts[1]); // Map item id to item name
                 }
             }
         } catch (Exception e) {
@@ -285,7 +311,7 @@ public class pr_e extends JPanel {
         // --- Set ComboBox editor for Item ID column ---
         JComboBox<String> itemComboBox = new JComboBox<>(itemIDs.toArray(new String[0]));
         DefaultCellEditor itemEditor = new DefaultCellEditor(itemComboBox);
-        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item ID
+        prDetailsTable.getColumnModel().getColumn(1).setCellEditor(itemEditor); // Item Name
 
         // Add CellEditorListener to update Supplier ID after editing Item ID
         itemEditor.addCellEditorListener(new javax.swing.event.CellEditorListener() {

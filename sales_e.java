@@ -4,9 +4,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.*;
 
 public class sales_e extends JPanel {
@@ -111,23 +114,77 @@ public class sales_e extends JPanel {
         dialog.setModal(true);
         dialog.setLayout(new BorderLayout());
 
-        String[] columns = {"ID", "Name", "Price", "Stock"};
+        String[] columns = {"Name", "Total Price", "Total Stock"};
         DefaultTableModel model = new DefaultTableModel(columns, 0);
+
+        // Aggregate items by name
+        Map<String, AggregatedItem> aggregatedItems = new HashMap<>();
 
         for (String[] item : itemsList) {
             if (item.length >= 6) {
-                model.addRow(new String[]{item[0], item[1], item[4], item[5]});
+                String itemName = item[1];
+                double price = Double.parseDouble(item[4]);
+                int stock = Integer.parseInt(item[5]);
+
+                if (aggregatedItems.containsKey(itemName)) {
+                    AggregatedItem existing = aggregatedItems.get(itemName);
+                    existing.totalStock += stock;
+                    existing.items.add(item);
+                } else {
+                    AggregatedItem newItem = new AggregatedItem();
+                    newItem.name = itemName;
+                    newItem.price = price;
+                    newItem.totalStock = stock;
+                    newItem.items.add(item);
+                    aggregatedItems.put(itemName, newItem);
+                }
             }
+        }
+
+        // Add aggregated items to table
+        for (AggregatedItem aggItem : aggregatedItems.values()) {
+            model.addRow(new Object[]{
+                aggItem.name,
+                String.format("%.2f", aggItem.price),
+                aggItem.totalStock
+            });
         }
 
         JTable table = new JTable(model);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+        // Custom renderer for low stock warning
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+                // Check if total stock is below 10
+                int totalStock = (Integer) table.getValueAt(row, 2);
+                if (totalStock < 10) {
+                    c.setForeground(Color.RED);
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                } else {
+                    c.setForeground(Color.BLACK);
+                    c.setFont(c.getFont().deriveFont(Font.PLAIN));
+                }
+
+                if (isSelected) {
+                    c.setBackground(table.getSelectionBackground());
+                } else {
+                    c.setBackground(table.getBackground());
+                }
+
+                return c;
+            }
+        });
+
         JButton selectButton = new JButton("Select");
         selectButton.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row >= 0) {
-                itemNameField.setText(table.getValueAt(row, 1).toString());
+                itemNameField.setText(table.getValueAt(row, 0).toString());
                 dialog.dispose();
             }
         });
@@ -225,7 +282,6 @@ public class sales_e extends JPanel {
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split("\\|");
                 if (data.length >= 6) {
-                    // Parse date using the dd-MM-yyyy format
                     LocalDate date = LocalDate.parse(data[2], DISPLAY_FORMAT);
                     Sales sale = new Sales(
                             data[0],
@@ -249,7 +305,7 @@ public class sales_e extends JPanel {
                         sale.getSalesId(),
                         sale.getItemId(),
                         itemName,
-                        date.format(DISPLAY_FORMAT), // Display in dd-MM-yyyy format
+                        date.format(DISPLAY_FORMAT),
                         sale.getQuantitySold(),
                         sale.getRemainingStock(),
                         sale.getSalesPerson(),
@@ -266,10 +322,9 @@ public class sales_e extends JPanel {
         File file = new File(SALES_FILE);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (Sales sale : salesList) {
-                // Format the sale data manually with dd-MM-yyyy date format
                 String formattedSale = sale.getSalesId() + "|" +
                                      sale.getItemId() + "|" +
-                                     sale.getSalesDate().format(DISPLAY_FORMAT) + "|" + // Use dd-MM-yyyy format
+                                     sale.getSalesDate().format(DISPLAY_FORMAT) + "|" +
                                      sale.getQuantitySold() + "|" +
                                      sale.getRemainingStock() + "|" +
                                      sale.getSalesPerson();
@@ -301,33 +356,53 @@ public class sales_e extends JPanel {
             }
 
             String selectedItemName = itemNameField.getText();
-            String itemId = "";
-            int currentStock = 0;
+
+            // Get all items with the same name and calculate total stock
+            List<String[]> matchingItems = new ArrayList<>();
+            int totalStock = 0;
 
             for (String[] item : itemsList) {
                 if (item[1].equals(selectedItemName)) {
-                    itemId = item[0];
-                    currentStock = Integer.parseInt(item[5]);
-                    break;
+                    matchingItems.add(item);
+                    totalStock += Integer.parseInt(item[5]);
                 }
             }
 
-            if (itemId.isEmpty()) {
+            if (matchingItems.isEmpty()) {
                 throw new Exception("Selected item not found in inventory");
             }
 
-            if (quantitySold > currentStock) {
-                throw new Exception("Not enough stock available");
+            if (quantitySold > totalStock) {
+                throw new Exception("Not enough stock available. Total available: " + totalStock);
             }
 
-            int remainingStock = currentStock - quantitySold;
+            // Sort items by stock (highest first) to deduct from highest stock first
+            matchingItems.sort((a, b) -> Integer.compare(Integer.parseInt(b[5]), Integer.parseInt(a[5])));
+
+            // Deduct stock from items (starting with highest stock)
+            int remainingToDeduct = quantitySold;
+            String primaryItemId = matchingItems.get(0)[0]; // Use the first item's ID for sales record
+
+            for (String[] item : matchingItems) {
+                if (remainingToDeduct <= 0) break;
+
+                int currentStock = Integer.parseInt(item[5]);
+                int deductFromThis = Math.min(remainingToDeduct, currentStock);
+
+                // Update this item's stock
+                updateSingleItemStock(item[0], deductFromThis);
+
+                remainingToDeduct -= deductFromThis;
+            }
+
+            int finalRemainingStock = totalStock - quantitySold;
 
             Sales newSale = new Sales(
                     String.valueOf(nextSalesId++),
-                    itemId,
+                    primaryItemId,
                     LocalDate.now(),
                     quantitySold,
-                    remainingStock,
+                    finalRemainingStock,
                     salesPerson
             );
 
@@ -336,14 +411,13 @@ public class sales_e extends JPanel {
                 newSale.getSalesId(),
                 newSale.getItemId(),
                 selectedItemName,
-                newSale.getSalesDate().format(DISPLAY_FORMAT), // Format date for display
+                newSale.getSalesDate().format(DISPLAY_FORMAT),
                 newSale.getQuantitySold(),
                 newSale.getRemainingStock(),
                 newSale.getSalesPerson(),
                 "View/Delete"
             });
 
-            updateItemStock(itemId, quantitySold);
             saveSales();
             loadItems();
             clearInputFields();
@@ -352,6 +426,33 @@ public class sales_e extends JPanel {
             JOptionPane.showMessageDialog(this, "Invalid quantity format", "Error", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void updateSingleItemStock(String itemId, int quantityToDeduct) {
+        try {
+            List<String> updatedItems = new ArrayList<>();
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(ITEMS_FILE))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] data = line.split("\\|");
+                    if (data.length >= 6 && data[0].equals(itemId)) {
+                        int currentStock = Integer.parseInt(data[5]);
+                        data[5] = String.valueOf(currentStock - quantityToDeduct);
+                    }
+                    updatedItems.add(String.join("|", data));
+                }
+            }
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(ITEMS_FILE))) {
+                for (String item : updatedItems) {
+                    writer.write(item + "\n");
+                }
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error updating stock: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -411,6 +512,14 @@ public class sales_e extends JPanel {
             saveSales();
             loadItems();
         }
+    }
+
+    // Helper class for aggregating items
+    private static class AggregatedItem {
+        String name;
+        double price;
+        int totalStock;
+        List<String[]> items = new ArrayList<>();
     }
 
     private static class ButtonRenderer extends JButton implements TableCellRenderer {
@@ -485,7 +594,6 @@ public class sales_e extends JPanel {
         private int remainingStock;
         private String salesPerson;
 
-        // Constructor
         public Sales(String salesId, String itemId, LocalDate salesDate,
                      int quantitySold, int remainingStock, String salesPerson) {
             this.salesId = salesId;
@@ -496,7 +604,6 @@ public class sales_e extends JPanel {
             this.salesPerson = salesPerson;
         }
 
-        // Getters
         public String getSalesId() { return salesId; }
         public String getItemId() { return itemId; }
         public LocalDate getSalesDate() { return salesDate; }
@@ -504,7 +611,6 @@ public class sales_e extends JPanel {
         public int getRemainingStock() { return remainingStock; }
         public String getSalesPerson() { return salesPerson; }
 
-        // Setters
         public void setSalesId(String salesId) { this.salesId = salesId; }
         public void setItemId(String itemId) { this.itemId = itemId; }
         public void setSalesDate(LocalDate salesDate) { this.salesDate = salesDate; }

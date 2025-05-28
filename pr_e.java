@@ -47,6 +47,7 @@ public class pr_e extends JPanel {
     protected pr_e_c controller;
     public Map<String, String> itemIdToNameMap = new HashMap<>();
     public Map<String, java.util.List<String>> itemNameToSupplierIdsMap = new HashMap<>();
+    public Map<String, Map<String, String>> itemNameAndSupplierToIdMap = new HashMap<>();
 
     public pr_e() {
         setLayout(new BorderLayout(0, 5)); // Main layout with vertical gap
@@ -106,8 +107,9 @@ public class pr_e extends JPanel {
         List<String> itemNames = new ArrayList<>();
         itemIdToNameMap.clear();
         itemNameToSupplierIdsMap.clear();
+        itemNameAndSupplierToIdMap.clear();
 
-        // Temporary maps for summing stock by item name
+        // For summing stock and collecting suppliers
         Map<String, Integer> itemNameToTotalStock = new HashMap<>();
         Map<String, List<String>> itemNameToSuppliers = new HashMap<>();
         Map<String, String> itemNameToFirstId = new HashMap<>();
@@ -133,13 +135,18 @@ public class pr_e extends JPanel {
                     if (!itemNameToFirstId.containsKey(itemName)) {
                         itemNameToFirstId.put(itemName, itemId);
                     }
+
+                    // Build (itemName, supplierId) -> itemId map
+                    itemNameAndSupplierToIdMap
+                        .computeIfAbsent(itemName, k -> new HashMap<>())
+                        .put(supplierId, itemId);
                 }
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading items.txt: " + e.getMessage());
         }
 
-        // Now, only add item names with total stock < 10
+        // Only add item names with total stock < 10
         for (String itemName : itemNameToTotalStock.keySet()) {
             if (itemNameToTotalStock.get(itemName) < 10) {
                 itemNames.add(itemName);
@@ -275,9 +282,8 @@ public class pr_e extends JPanel {
         detailsTableModel = new DefaultTableModel(detailsColumnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Only allow editing for Item ID, Quantity, Required Date
-                // Supplier ID (column 2) is NOT editable
-                return column == 1 || column == 3 || column == 4;
+                // Only allow editing for Quantity (column 3)
+                return column == 3;
             }
         };
         prDetailsTable = new JTable(detailsTableModel);

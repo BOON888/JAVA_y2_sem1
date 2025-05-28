@@ -192,31 +192,8 @@ public class item_e extends JPanel {
             }
         };
 
-        // Create table with custom renderer
-        itemTable = new JTable(tableModel) {
-            @Override
-            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-                Component component = super.prepareRenderer(renderer, row, column);
-                
-                try {
-                    // Get the stock quantity from column 6
-                    int stock = Integer.parseInt(getValueAt(row, 6).toString());
-                    if (stock < 10) {
-                        component.setBackground(Color.RED);
-                        component.setForeground(Color.WHITE);
-                    } else {
-                        component.setBackground(getBackground());
-                        component.setForeground(getForeground());
-                    }
-                } catch (NumberFormatException e) {
-                    // If there's an error parsing, use default colors
-                    component.setBackground(getBackground());
-                    component.setForeground(getForeground());
-                }
-                
-                return component;
-            }
-        };
+        // Create table
+        itemTable = new JTable(tableModel);
         itemTable.setRowHeight(30);
 
         // Add action buttons
@@ -519,10 +496,10 @@ public class item_e extends JPanel {
                         "Cancel");
 
                 if (option == 0) {
-                    viewItem(itemTable.getEditingRow()); 
-                } else if (option == 1) {
-                    editItem(itemTable.getEditingRow()); 
-                } else if (option == 2) {
+                    viewItem(itemTable.getEditingRow());
+                }else if (option == 1) {
+                    editItem(itemTable.getEditingRow());
+                }else if (option == 2) {
                     deleteItem(itemTable.getEditingRow());
                 }
             }

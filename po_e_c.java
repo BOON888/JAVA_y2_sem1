@@ -6,7 +6,6 @@ import javax.swing.JOptionPane;
 public class po_e_c {
     private static final String PO_FILE = "TXT/po.txt";
 
-    // 读取所有采购订单数据
     public List<String[]> loadPurchaseOrders() {
         List<String[]> fullPoData = new ArrayList<>();
         File file = new File(PO_FILE);
@@ -45,7 +44,7 @@ public class po_e_c {
         return fullPoData;
     }
 
-    // 添加采购订单
+    
     public boolean addPurchaseOrder(String prID, String itemID, String supplierID, String quantityStr, String orderDate,
                                  String receivedBy, String approvedBy) {
     if (prID.isEmpty() || itemID.isEmpty() || supplierID.isEmpty() || quantityStr.isEmpty() || orderDate.isEmpty()) {
@@ -76,7 +75,7 @@ public class po_e_c {
 
     String orderBy = login_c.currentUserId != null ? login_c.currentUserId : "Unknown";
 
-    // 提取 user ID 部分
+
     String receivedByID = receivedBy.split(" - ")[0].trim();
     String approvedByID = approvedBy.split(" - ")[0].trim();
 
@@ -96,7 +95,6 @@ public class po_e_c {
         }
     }
 
-    // 从文件中删除采购订单
     public boolean deletePurchaseOrder(String poIDToDelete) {
     File inputFile = new File(PO_FILE);
     File tempFile = null;
@@ -126,14 +124,12 @@ public class po_e_c {
             if (data.length > 0 && data[0].equals(poIDToDelete)) {
                 found = true;
                 if (data.length >= 10 && data[9].equalsIgnoreCase("Approved")) {
-                    // 不允许删除已批准的 PO
                     JOptionPane.showMessageDialog(null, "Cannot delete PO ID " + poIDToDelete + " because it is already Approved.",
                             "Delete Not Allowed", JOptionPane.WARNING_MESSAGE);
-                    writer.write(line);  // 保留原行
+                    writer.write(line); 
                     writer.newLine();
                 } else {
                     deleted = true;
-                    // 不写入此行，即删除
                 }
             } else {
                 writer.write(line);
@@ -180,7 +176,6 @@ public class po_e_c {
     }
 }
 
-    // 生成唯一的 PO ID
     private int generatePOID() {
         int maxID = 0;
         File file = new File(PO_FILE);
@@ -211,7 +206,6 @@ public class po_e_c {
         return maxID + 1;
     }
 
-    // 更新采购订单
     public boolean updatePurchaseOrder(String poIDToUpdate, String[] updatedData) {
         File inputFile = new File(PO_FILE);
         File tempFile = null;

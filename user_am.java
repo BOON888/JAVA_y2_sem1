@@ -257,7 +257,19 @@ public class user_am extends JPanel {
 
         // For simplicity, we keep the original password here.
         // In a real application, you might prompt for a new password.
-        user_c updatedUser = new user_c(userId, updatedUsername, "password", updatedRole, updatedContact, updatedEmail);
+        String originalPassword = null;
+        for (user_c user : UserController.loadUsers()) {
+            if (user.getId().equals(userId)) {
+                originalPassword = user.getPassword();
+                break;
+            }
+        }
+
+        if (originalPassword == null) {
+            JOptionPane.showMessageDialog(this, "Original user data not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        user_c updatedUser = new user_c(userId, updatedUsername, originalPassword, updatedRole, updatedContact, updatedEmail);
         if (UserController.isValidUser(updatedUser)) {
             UserController.updateUser(updatedUser);
             JOptionPane.showMessageDialog(null, "User updated successfully!");
